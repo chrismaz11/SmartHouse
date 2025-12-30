@@ -1,0 +1,30 @@
+{
+  "name": "wifi-triangulation-system",
+  "version": "1.0.0",
+  "description": "WiFi triangulation system with Gemini-powered smart home automation",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "build": "electron-builder",
+    "install-deps": "npm install"
+  },
+  "keywords": [
+    "wifi",
+    "triangulation",
+    "smart-home",
+    "automation",
+    "gemini"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^39.2.7",
+    "electron-builder": "^24.0.0"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.2.1",
+    "axios": "^1.6.0",
+    "bonjour": "^3.3.0"
+  }
+}

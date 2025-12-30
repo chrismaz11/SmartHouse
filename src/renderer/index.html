@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WiFi Triangulation System</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <h1>WiFi Triangulation System</h1>
+            <div class="status-indicator">
+                <span id="status-dot" class="status-dot"></span>
+                <span id="status-text">Initializing...</span>
+            </div>
+        </header>
+
+        <nav class="app-nav">
+            <button class="nav-btn active" data-view="dashboard">Dashboard</button>
+            <button class="nav-btn" data-view="network">Network</button>
+            <button class="nav-btn" data-view="devices">Devices</button>
+            <button class="nav-btn" data-view="floorplan">Floor Plan</button>
+            <button class="nav-btn" data-view="automation">Automation</button>
+            <button class="nav-btn" data-view="settings">Settings</button>
+        </nav>
+
+        <main class="app-main">
+            <!-- Dashboard View -->
+            <div id="dashboard-view" class="view active">
+                <div class="dashboard-grid">
+                    <div class="card">
+                        <h3>Network Status</h3>
+                        <div id="network-status">Scanning...</div>
+                    </div>
+                    <div class="card">
+                        <h3>Connected Devices</h3>
+                        <div id="device-count">
+                            <span class="count">0</span>
+                            <span class="label">devices tracked</span>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <h3>Access Points</h3>
+                        <div id="ap-status">Detecting...</div>
+                    </div>
+                    <div class="card">
+                        <h3>Automation Status</h3>
+                        <div id="automation-status">Ready</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Network View -->
+            <div id="network-view" class="view">
+                <div class="view-header">
+                    <h2>Network Discovery</h2>
+                    <div>
+                        <button id="manual-network-btn" class="btn-secondary" style="margin-right: 12px;">Manual Entry</button>
+                        <button id="scan-btn" class="btn-primary">Scan Networks</button>
+                    </div>
+                </div>
+                <div class="network-list">
+                    <div id="wifi-networks"></div>
+                </div>
+                <div class="ap-config">
+                    <h3>Access Point Configuration</h3>
+                    <div id="ap-positions"></div>
+                </div>
+            </div>
+
+            <!-- Manual Network Entry Modal -->
+            <div id="manual-network-modal" class="modal">
+                <div class="modal-content">
+                    <h3>Manual Network Entry</h3>
+                    <p>Enter your actual WiFi networks manually:</p>
+                    <div id="manual-networks">
+                        <div class="manual-network-entry">
+                            <label>Network Name (SSID):</label>
+                            <input type="text" class="manual-ssid" placeholder="Your WiFi network name">
+                            <label>Location:</label>
+                            <select class="manual-location">
+                                <option value="1">Floor 1</option>
+                                <option value="2" selected>Floor 2 (Main Router)</option>
+                                <option value="3">Floor 3</option>
+                            </select>
+                            <label>Device Type:</label>
+                            <select class="manual-type">
+                                <option value="router">Main Router</option>
+                                <option value="pod">WiFi Pod/Extender</option>
+                                <option value="repeater">Repeater</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button id="add-network-entry" class="btn-secondary" style="margin: 12px 0;">Add Another Network</button>
+                    <div class="modal-buttons">
+                        <button type="button" id="cancel-manual" class="btn-secondary">Cancel</button>
+                        <button type="button" id="save-manual-networks" class="btn-primary">Save Networks</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Devices View -->
+            <div id="devices-view" class="view">
+                <div class="view-header">
+                    <h2>Device Tracking</h2>
+                    <button id="refresh-devices" class="btn-primary">Refresh</button>
+                </div>
+                <div class="device-list">
+                    <div id="tracked-devices"></div>
+                </div>
+                <div class="device-tagging">
+                    <h3>Device Tags</h3>
+                    <div id="device-tags"></div>
+                </div>
+            </div>
+
+            <!-- Floor Plan View -->
+            <div id="floorplan-view" class="view">
+                <div class="view-header">
+                    <h2>Floor Plan</h2>
+                    <div class="floor-controls">
+                        <button class="floor-btn active" data-floor="1">Floor 1</button>
+                        <button class="floor-btn" data-floor="2">Floor 2</button>
+                        <button class="floor-btn" data-floor="3">Floor 3</button>
+                    </div>
+                </div>
+                <div class="floorplan-container">
+                    <canvas id="floorplan-canvas" width="800" height="600"></canvas>
+                    <div class="floorplan-controls">
+                        <input type="file" id="floorplan-upload" accept="image/*" style="display: none;">
+                        <button id="upload-floorplan" class="btn-secondary">Upload Floor Plan</button>
+                        <button id="zoom-in" class="btn-secondary">Zoom In</button>
+                        <button id="zoom-out" class="btn-secondary">Zoom Out</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Automation View -->
+            <div id="automation-view" class="view">
+                <div class="view-header">
+                    <h2>Automation Rules</h2>
+                    <button id="add-automation" class="btn-primary">Add Rule</button>
+                </div>
+                <div class="automation-list">
+                    <div id="automation-rules"></div>
+                </div>
+                <div class="smart-device-test">
+                    <h3>Smart Device Testing</h3>
+                    <div class="device-test-grid">
+                        <button class="test-btn" data-device="light">Test Lights</button>
+                        <button class="test-btn" data-device="switch">Test Switches</button>
+                        <button class="test-btn" data-device="camera">Test Cameras</button>
+                        <button class="test-btn" data-device="speaker">Test Speakers</button>
+                        <button class="test-btn" data-device="tv">Test Apple TV</button>
+                        <button class="test-btn" data-device="unknown">Discover Devices</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings View -->
+            <div id="settings-view" class="view">
+                <div class="view-header">
+                    <h2>Settings</h2>
+                    <div>
+                        <button id="start-intelligent-setup" class="btn-primary" style="margin-right: 12px;">🧠 Start Intelligent Setup</button>
+                        <button id="save-settings" class="btn-primary">Save Settings</button>
+                    </div>
+                </div>
+                <div class="settings-grid">
+                    <div class="settings-section">
+                        <h3>Gemini AI Configuration</h3>
+                        <label>API Key:</label>
+                        <input type="password" id="gemini-api-key" placeholder="Enter Gemini API key">
+                        <div id="gemini-status" style="margin-top: 8px; font-size: 12px; color: #94a3b8;"></div>
+                    </div>
+                    <div class="settings-section">
+                        <h3>Triangulation Settings</h3>
+                        <label>Path Loss Exponent (n):</label>
+                        <input type="number" id="path-loss" value="2.0" step="0.1" min="1.5" max="4.0">
+                        <label>Reference Power (A):</label>
+                        <input type="number" id="ref-power" value="-59" step="1" min="-80" max="-40">
+                    </div>
+                    <div class="settings-section">
+                        <h3>Homebridge Integration</h3>
+                        <label>Homebridge IP:</label>
+                        <input type="text" id="homebridge-ip" placeholder="192.168.1.100">
+                        <label>Homebridge Port:</label>
+                        <input type="number" id="homebridge-port" value="51826">
+                        <label>Homebridge PIN:</label>
+                        <input type="text" id="homebridge-pin" placeholder="123-45-678">
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Intelligent Setup Modal -->
+    <div id="intelligent-setup-modal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <h3>🧠 Gemini Intelligent Setup</h3>
+            <div id="setup-content">
+                <div id="setup-message"></div>
+                <div id="setup-instructions" style="margin: 16px 0; padding: 12px; background: #334155; border-radius: 6px;"></div>
+                <div id="setup-progress" style="margin: 16px 0;">
+                    <div style="background: #1e293b; height: 8px; border-radius: 4px; overflow: hidden;">
+                        <div id="progress-bar" style="background: #3b82f6; height: 100%; width: 0%; transition: width 0.3s;"></div>
+                    </div>
+                    <div id="progress-text" style="font-size: 12px; color: #94a3b8; margin-top: 4px;"></div>
+                </div>
+                <div id="walking-controls" style="display: none; margin: 16px 0;">
+                    <h4>Walking Setup</h4>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 12px 0;">
+                        <select id="device-type-select">
+                            <option value="">Select device type...</option>
+                            <option value="router">Router/Main AP</option>
+                            <option value="pod">WiFi Pod/Extender</option>
+                            <option value="light">Smart Light</option>
+                            <option value="switch">Smart Switch</option>
+                            <option value="camera">Security Camera</option>
+                            <option value="speaker">Smart Speaker</option>
+                        </select>
+                        <input type="text" id="setup-codes" placeholder="Setup codes/PIN">
+                    </div>
+                    <button id="mark-location" class="btn-primary">📍 Mark Current Location</button>
+                </div>
+            </div>
+            <div class="modal-buttons">
+                <button type="button" id="cancel-setup" class="btn-secondary">Cancel</button>
+                <button type="button" id="continue-setup" class="btn-primary">Continue</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="automation-modal" class="modal">
+        <div class="modal-content">
+            <h3>Create Automation Rule</h3>
+            <form id="automation-form">
+                <label>Rule Name:</label>
+                <input type="text" id="rule-name" required>
+                
+                <label>Trigger Person:</label>
+                <select id="trigger-person">
+                    <option value="">Select person...</option>
+                </select>
+                
+                <label>Zone (Room):</label>
+                <select id="trigger-zone">
+                    <option value="living-room">Living Room</option>
+                    <option value="kitchen">Kitchen</option>
+                    <option value="bedroom">Bedroom</option>
+                    <option value="bathroom">Bathroom</option>
+                </select>
+                
+                <label>Action Type:</label>
+                <select id="action-type">
+                    <option value="lighting">Lighting</option>
+                    <option value="music">Music</option>
+                    <option value="security">Security</option>
+                    <option value="appliance">Appliance</option>
+                </select>
+                
+                <div class="modal-buttons">
+                    <button type="button" id="cancel-automation" class="btn-secondary">Cancel</button>
+                    <button type="submit" class="btn-primary">Create Rule</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="renderer.js"></script>
+</body>
+</html>

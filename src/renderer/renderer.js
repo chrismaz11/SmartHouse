@@ -11,6 +11,7 @@ class WiFiTriangulationApp {
         this.canvas = null;
         this.ctx = null;
         this.floorPlanImage = null;
+        this.floorPlans = {}; // Cache for floor plans
         this.zoom = 1;
         this.panX = 0;
         this.panY = 0;
@@ -98,6 +99,10 @@ class WiFiTriangulationApp {
         document.getElementById('zoom-out').addEventListener('click', () => {
             this.zoom = Math.max(this.zoom / 1.2, 0.5);
             this.drawFloorPlan();
+        });
+
+        document.getElementById('enhance-floorplan').addEventListener('click', () => {
+            this.enhanceFloorPlan();
         });
 
         // Automation
@@ -192,7 +197,7 @@ class WiFiTriangulationApp {
             btn.classList.remove('active');
         });
         document.querySelector(`[data-floor="${floor}"]`).classList.add('active');
-        this.drawFloorPlan();
+        this.loadCurrentFloorPlan();
     }
 
     async loadInitialData() {
@@ -200,6 +205,36 @@ class WiFiTriangulationApp {
         await this.refreshDevices();
         await this.loadAutomations();
         await this.loadSettings();
+        await this.loadCurrentFloorPlan();
+    }
+
+    async loadCurrentFloorPlan() {
+        try {
+            // Check cache first
+            if (this.floorPlans[this.currentFloor]) {
+                this.floorPlanImage = this.floorPlans[this.currentFloor];
+                this.drawFloorPlan();
+                return;
+            }
+
+            const floorPlanData = await ipcRenderer.invoke('get-floor-plan', this.currentFloor);
+            if (floorPlanData) {
+                const img = new Image();
+                img.onload = () => {
+                    this.floorPlans[this.currentFloor] = img;
+                    this.floorPlanImage = img;
+                    this.drawFloorPlan();
+                };
+                img.src = floorPlanData;
+            } else {
+                this.floorPlanImage = null;
+                this.drawFloorPlan();
+            }
+        } catch (error) {
+            console.error('Failed to load floor plan:', error);
+            this.floorPlanImage = null;
+            this.drawFloorPlan();
+        }
     }
 
     async scanNetworks() {
@@ -345,13 +380,19 @@ class WiFiTriangulationApp {
         if (!file) return;
         
         const reader = new FileReader();
-        reader.onload = (e) => {
+        reader.onload = async (e) => {
+            const result = e.target.result;
+
+            // Save to backend
+            await ipcRenderer.invoke('save-floor-plan', this.currentFloor, result);
+
             const img = new Image();
             img.onload = () => {
+                this.floorPlans[this.currentFloor] = img;
                 this.floorPlanImage = img;
                 this.drawFloorPlan();
             };
-            img.src = e.target.result;
+            img.src = result;
         };
         reader.readAsDataURL(file);
     }
@@ -361,8 +402,23 @@ class WiFiTriangulationApp {
         
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         
-        // Draw floor plan image if loaded
-        if (this.floorPlanImage) {
+        // Check for enhanced SVG first
+        if (this.enhancedFloorPlans && this.enhancedFloorPlans[this.currentFloor]) {
+            const svgImg = this.enhancedFloorPlans[this.currentFloor];
+            const scale = Math.min(
+                this.canvas.width / svgImg.width,
+                this.canvas.height / svgImg.height
+            ) * this.zoom;
+
+            const x = (this.canvas.width - svgImg.width * scale) / 2 + this.panX;
+            const y = (this.canvas.height - svgImg.height * scale) / 2 + this.panY;
+
+            this.ctx.drawImage(svgImg, x, y,
+                svgImg.width * scale,
+                svgImg.height * scale);
+        }
+        // Draw standard floor plan image if loaded and no enhanced version
+        else if (this.floorPlanImage) {
             const scale = Math.min(
                 this.canvas.width / this.floorPlanImage.width,
                 this.canvas.height / this.floorPlanImage.height
@@ -786,6 +842,51 @@ class WiFiTriangulationApp {
             <button class="btn-secondary" onclick="this.parentElement.remove()" style="margin-top: 8px;">Remove</button>
         `;
         container.appendChild(entry);
+    }
+
+    async enhanceFloorPlan() {
+        if (!this.floorPlanImage) {
+            this.showNotification('Please upload a floor plan first!', 'error');
+            return;
+        }
+
+        this.updateStatus('Enhancing floor plan with Gemini...', 'connecting');
+        const btn = document.getElementById('enhance-floorplan');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '✨ Generating...';
+        btn.disabled = true;
+
+        try {
+            // Convert current image to base64
+            const canvas = document.createElement('canvas');
+            canvas.width = this.floorPlanImage.width;
+            canvas.height = this.floorPlanImage.height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(this.floorPlanImage, 0, 0);
+            const base64 = canvas.toDataURL('image/png');
+
+            const svgCode = await ipcRenderer.invoke('enhance-floor-plan', base64);
+
+            if (svgCode) {
+                const img = new Image();
+                img.onload = () => {
+                    if (!this.enhancedFloorPlans) this.enhancedFloorPlans = {};
+                    this.enhancedFloorPlans[this.currentFloor] = img;
+                    this.drawFloorPlan();
+                    this.showNotification('Floor plan enhanced successfully! ✨');
+                };
+                img.src = 'data:image/svg+xml;base64,' + btoa(svgCode);
+            } else {
+                this.showNotification('Failed to enhance floor plan.', 'error');
+            }
+        } catch (error) {
+            console.error('Enhancement failed:', error);
+            this.showNotification('Enhancement failed!', 'error');
+        } finally {
+            this.updateStatus('Ready', 'connected');
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
     }
 
     async saveManualNetworks() {

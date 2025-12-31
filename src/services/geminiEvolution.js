@@ -16,6 +16,7 @@ class GeminiEvolutionEngine {
     try {
       const genAI = new GoogleGenerativeAI(apiKey);
       this.geminiClient = genAI.getGenerativeModel({ model: "gemini-pro" });
+      this.geminiVisionClient = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
       
       // Load evolution history
       await this.loadEvolutionHistory();
@@ -25,6 +26,41 @@ class GeminiEvolutionEngine {
     } catch (error) {
       console.error('Gemini initialization failed:', error);
       return false;
+    }
+  }
+
+  async enhanceFloorPlan(imageBase64) {
+    if (!this.geminiVisionClient) return null;
+
+    try {
+        // Prepare image for Gemini
+        const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
+        const imagePart = {
+            inlineData: {
+                data: base64Data,
+                mimeType: "image/png"
+            }
+        };
+
+        const prompt = `Analyze this floor plan image and generate a high-quality SVG representation of it that mimics the style of Home Assistant Lovelace floor plans.
+
+        Requirements:
+        1. Use clean lines and modern architectural styling.
+        2. Include distinct areas for rooms.
+        3. The SVG should be scalable and responsive.
+        4. Use a dark theme color palette suitable for a smart home dashboard (slate/dark blue background, light contrasting lines).
+        5. Return ONLY the raw SVG code, starting with <svg and ending with </svg>. Do not include markdown formatting or explanation.`;
+
+        const result = await this.geminiVisionClient.generateContent([prompt, imagePart]);
+        const response = result.response.text();
+
+        // Clean up response if it contains markdown code blocks
+        const svgCode = response.replace(/```svg/g, '').replace(/```/g, '').trim();
+
+        return svgCode;
+    } catch (error) {
+        console.error('Floor plan enhancement failed:', error);
+        return null;
     }
   }
 

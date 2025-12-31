@@ -236,3 +236,39 @@ ipcMain.handle('load-settings', async () => {
     return {};
   }
 });
+
+ipcMain.handle('save-floor-plan', async (event, floor, imageBase64) => {
+  try {
+    const floorPlanDir = path.join(__dirname, 'config/floorplans');
+    await fs.mkdir(floorPlanDir, { recursive: true });
+
+    // Remove header if present (e.g., "data:image/png;base64,")
+    const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
+
+    await fs.writeFile(path.join(floorPlanDir, `floor-${floor}.png`), base64Data, 'base64');
+    return true;
+  } catch (error) {
+    console.error('Save floor plan error:', error);
+    return false;
+  }
+});
+
+ipcMain.handle('get-floor-plan', async (event, floor) => {
+  try {
+    const floorPlanPath = path.join(__dirname, `config/floorplans/floor-${floor}.png`);
+    const data = await fs.readFile(floorPlanPath, 'base64');
+    return `data:image/png;base64,${data}`;
+  } catch (error) {
+    // Return null if no floor plan exists for this floor
+    return null;
+  }
+});
+
+ipcMain.handle('enhance-floor-plan', async (event, imageBase64) => {
+    try {
+        return geminiEvolution ? await geminiEvolution.enhanceFloorPlan(imageBase64) : null;
+    } catch (error) {
+        console.error('Enhance floor plan error:', error);
+        return null;
+    }
+});

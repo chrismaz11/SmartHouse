@@ -54,14 +54,24 @@ class WiFiScanner {
     this.accessPoints = this.networks.filter(network => {
       const ssid = network.ssid?.toLowerCase() || '';
       // Look for any strong signals that could be your home network
-      return network.signal_level > -60 || // Strong signal
+      // Note: signal_level might be positive (quality) or negative (dBm) depending on strategy
+      // Simple heuristic: if > 0 (quality), strong is > 70? If < 0 (dBm), strong is > -60?
+
+      let isStrong = false;
+      if (network.signal_level > 0) {
+        isStrong = network.signal_level > 50; // Quality %
+      } else {
+        isStrong = network.signal_level > -65; // dBm
+      }
+
+      return isStrong ||
              ssid.includes('xfinity') || 
              ssid.includes('home') ||
              ssid.includes('wifi') ||
              ssid.includes('pod');
     }).slice(0, 5); // Get top 5 strongest networks
     
-    console.log('Identified access points:', this.accessPoints);
+    // console.log('Identified access points:', this.accessPoints);
   }
 
   async getAccessPoints() {

@@ -1,6 +1,8 @@
 const fs = require('fs').promises;
 const path = require('path');
-const { LinuxStrategy, MacStrategy, MockStrategy } = require('./strategies/wifiStrategies');
+const LinuxStrategy = require('./wifi/strategies/LinuxStrategy');
+const MacStrategy = require('./wifi/strategies/MacStrategy');
+const MockStrategy = require('./wifi/strategies/MockStrategy');
 
 class WiFiScanner {
   constructor() {

@@ -18,6 +18,17 @@ class WiFiTriangulationApp {
         this.init();
     }
 
+    escapeHtml(unsafe) {
+        if (unsafe === null || unsafe === undefined) return '';
+        const str = String(unsafe);
+        return str
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
     async init() {
         this.setupEventListeners();
         this.setupCanvas();
@@ -226,9 +237,9 @@ class WiFiTriangulationApp {
         container.innerHTML = this.networks.map(network => `
             <div class="network-item">
                 <div class="network-info">
-                    <div class="network-name">${network.ssid || 'Hidden Network'}</div>
+                    <div class="network-name">${this.escapeHtml(network.ssid || 'Hidden Network')}</div>
                     <div class="network-details">
-                        ${network.bssid} • ${network.frequency}MHz
+                        ${this.escapeHtml(network.bssid)} • ${network.frequency}MHz
                     </div>
                 </div>
                 <div class="signal-strength">
@@ -245,7 +256,7 @@ class WiFiTriangulationApp {
         container.innerHTML = this.accessPoints.map(ap => `
             <div class="network-item">
                 <div class="network-info">
-                    <div class="network-name">${ap.ssid || 'Access Point'}</div>
+                    <div class="network-name">${this.escapeHtml(ap.ssid || 'Access Point')}</div>
                     <div class="network-details">
                         Floor ${ap.position?.floor || 1} • Position: (${ap.position?.x || 0}, ${ap.position?.y || 0})
                     </div>
@@ -268,9 +279,9 @@ class WiFiTriangulationApp {
         container.innerHTML = this.devices.map(device => `
             <div class="device-item">
                 <div class="device-info">
-                    <div class="device-name">${device.tag || device.mac}</div>
+                    <div class="device-name">${this.escapeHtml(device.tag || device.mac)}</div>
                     <div class="device-details">
-                        ${device.mac} • Last seen: ${new Date(device.lastSeen).toLocaleTimeString()}
+                        ${this.escapeHtml(device.mac)} • Last seen: ${new Date(device.lastSeen).toLocaleTimeString()}
                     </div>
                 </div>
                 <div class="signal-strength">
@@ -287,11 +298,11 @@ class WiFiTriangulationApp {
         
         container.innerHTML = this.devices.map(device => `
             <div style="margin-bottom: 12px;">
-                <label style="display: block; margin-bottom: 4px;">${device.mac}:</label>
+                <label style="display: block; margin-bottom: 4px;">${this.escapeHtml(device.mac)}:</label>
                 <input type="text" 
-                       value="${device.tag || ''}" 
+                       value="${this.escapeHtml(device.tag || '')}"
                        placeholder="Enter device name (e.g., John's Phone)"
-                       data-mac="${device.mac}"
+                       data-mac="${this.escapeHtml(device.mac)}"
                        style="width: 100%; padding: 6px; background: #0f172a; border: 1px solid #334155; border-radius: 4px; color: #f1f5f9;">
             </div>
         `).join('');
@@ -423,12 +434,12 @@ class WiFiTriangulationApp {
         container.innerHTML = this.automations.map(automation => `
             <div class="automation-item">
                 <div class="device-info">
-                    <div class="device-name">${automation.name}</div>
+                    <div class="device-name">${this.escapeHtml(automation.name)}</div>
                     <div class="device-details">
-                        ${automation.trigger} • ${automation.type} • ${automation.zone || 'Any zone'}
+                        ${this.escapeHtml(automation.trigger)} • ${this.escapeHtml(automation.type)} • ${this.escapeHtml(automation.zone || 'Any zone')}
                     </div>
                 </div>
-                <button class="btn-secondary" onclick="this.deleteAutomation('${automation.id}')">Delete</button>
+                <button class="btn-secondary" onclick="this.deleteAutomation('${this.escapeHtml(automation.id)}')">Delete</button>
             </div>
         `).join('');
     }
@@ -438,7 +449,7 @@ class WiFiTriangulationApp {
         const personSelect = document.getElementById('trigger-person');
         personSelect.innerHTML = '<option value="">Select person...</option>' +
             this.devices.map(device => 
-                `<option value="${device.mac}">${device.tag || device.mac}</option>`
+                `<option value="${this.escapeHtml(device.mac)}">${this.escapeHtml(device.tag || device.mac)}</option>`
             ).join('');
         
         document.getElementById('automation-modal').classList.add('active');

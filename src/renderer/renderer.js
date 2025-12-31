@@ -152,11 +152,19 @@ class WiFiTriangulationApp {
             this.handleCanvasClick(e);
         });
 
+        let animationFrameId = null;
         this.canvas.addEventListener('wheel', (e) => {
             e.preventDefault();
             const delta = e.deltaY > 0 ? 0.9 : 1.1;
             this.zoom = Math.max(0.5, Math.min(3, this.zoom * delta));
-            this.drawFloorPlan();
+
+            // ⚡ Bolt: Use requestAnimationFrame to debounce redraws during scrolling
+            if (!animationFrameId) {
+                animationFrameId = requestAnimationFrame(() => {
+                    this.drawFloorPlan();
+                    animationFrameId = null;
+                });
+            }
         });
     }
 
@@ -613,12 +621,8 @@ class WiFiTriangulationApp {
             }
         }, 30000);
 
-        // Update floor plan every 5 seconds
-        setInterval(() => {
-            if (this.currentView === 'floorplan') {
-                this.drawFloorPlan();
-            }
-        }, 5000);
+        // ⚡ Bolt: Removed redundant 5-second floor plan redraw loop.
+        // Redraw is now event-driven by refreshDevices() and user interactions.
 
         // Listen for Gemini improvements
         ipcRenderer.on('gemini-improvements', (event, improvements) => {

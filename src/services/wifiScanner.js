@@ -1,26 +1,26 @@
 const fs = require('fs').promises;
 const path = require('path');
-const LinuxStrategy = require('./wifi/strategies/LinuxStrategy');
-const MacStrategy = require('./wifi/strategies/MacStrategy');
-const MockStrategy = require('./wifi/strategies/MockStrategy');
+const { LinuxStrategy, MacStrategy, MockStrategy } = require('./strategies/wifiStrategies');
 
 class WiFiScanner {
   constructor() {
     this.networks = [];
     this.accessPoints = [];
     this.configPath = path.join(__dirname, '../config/access-points.json');
-    this.strategy = this.selectStrategy();
-  }
 
-  selectStrategy() {
+    // Select strategy based on platform
     if (process.platform === 'linux') {
-      return new LinuxStrategy();
+      this.strategy = new LinuxStrategy();
     } else if (process.platform === 'darwin') {
-      return new MacStrategy();
+      this.strategy = new MacStrategy();
     } else {
-      console.log('Unsupported platform, falling back to mock data');
-      return new MockStrategy();
+      this.strategy = new MockStrategy();
     }
+
+    // Also use mock strategy if we want to force it or if initialization fails
+    // But for now, we trust the platform check.
+    // We can wrap the strategy execution in try-catch to fallback to mock.
+    this.mockStrategy = new MockStrategy();
   }
 
   async initialize() {
@@ -30,24 +30,24 @@ class WiFiScanner {
 
   async scanNetworks() {
     try {
-      let networks = [];
-      try {
-        networks = await this.strategy.scan();
-      } catch (error) {
-        console.warn(`Primary strategy failed: ${error.message}. Falling back to MockStrategy.`);
-        // Fallback to mock if the system tool fails (e.g., nmcli not installed)
-        const fallback = new MockStrategy();
-        networks = await fallback.scan();
+      this.networks = await this.strategy.scan();
+      if (this.networks.length === 0) {
+        throw new Error('No networks found');
       }
-      
-      this.networks = networks;
-      this.identifyAccessPoints();
-      // console.log('Found networks:', this.networks);
-      return this.networks;
     } catch (error) {
-      console.error('WiFi scan error:', error);
-      return [];
+      console.log(`Scanning with ${this.strategy.constructor.name} failed or found nothing, using MockStrategy.`);
+      console.error(error.message); // Log the actual error for debugging
+      try {
+        this.networks = await this.mockStrategy.scan();
+      } catch (mockError) {
+        console.error('Mock strategy failed:', mockError);
+        this.networks = [];
+      }
     }
+    
+    this.identifyAccessPoints();
+    console.log('Found networks:', this.networks);
+    return this.networks;
   }
 
   identifyAccessPoints() {

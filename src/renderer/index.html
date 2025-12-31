@@ -76,20 +76,26 @@
                     <p>Enter your actual WiFi networks manually:</p>
                     <div id="manual-networks">
                         <div class="manual-network-entry">
-                            <label>Network Name (SSID):</label>
-                            <input type="text" class="manual-ssid" placeholder="Your WiFi network name">
-                            <label>Location:</label>
-                            <select class="manual-location">
-                                <option value="1">Floor 1</option>
-                                <option value="2" selected>Floor 2 (Main Router)</option>
-                                <option value="3">Floor 3</option>
-                            </select>
-                            <label>Device Type:</label>
-                            <select class="manual-type">
-                                <option value="router">Main Router</option>
-                                <option value="pod">WiFi Pod/Extender</option>
-                                <option value="repeater">Repeater</option>
-                            </select>
+                            <label>
+                                Network Name (SSID):
+                                <input type="text" class="manual-ssid" placeholder="Your WiFi network name">
+                            </label>
+                            <label>
+                                Location:
+                                <select class="manual-location">
+                                    <option value="1">Floor 1</option>
+                                    <option value="2" selected>Floor 2 (Main Router)</option>
+                                    <option value="3">Floor 3</option>
+                                </select>
+                            </label>
+                            <label>
+                                Device Type:
+                                <select class="manual-type">
+                                    <option value="router">Main Router</option>
+                                    <option value="pod">WiFi Pod/Extender</option>
+                                    <option value="repeater">Repeater</option>
+                                </select>
+                            </label>
                         </div>
                     </div>
                     <button id="add-network-entry" class="btn-secondary" style="margin: 12px 0;">Add Another Network</button>
@@ -170,24 +176,24 @@
                 <div class="settings-grid">
                     <div class="settings-section">
                         <h3>Gemini AI Configuration</h3>
-                        <label>API Key:</label>
+                        <label for="gemini-api-key">API Key:</label>
                         <input type="password" id="gemini-api-key" placeholder="Enter Gemini API key">
                         <div id="gemini-status" style="margin-top: 8px; font-size: 12px; color: #94a3b8;"></div>
                     </div>
                     <div class="settings-section">
                         <h3>Triangulation Settings</h3>
-                        <label>Path Loss Exponent (n):</label>
+                        <label for="path-loss">Path Loss Exponent (n):</label>
                         <input type="number" id="path-loss" value="2.0" step="0.1" min="1.5" max="4.0">
-                        <label>Reference Power (A):</label>
+                        <label for="ref-power">Reference Power (A):</label>
                         <input type="number" id="ref-power" value="-59" step="1" min="-80" max="-40">
                     </div>
                     <div class="settings-section">
                         <h3>Homebridge Integration</h3>
-                        <label>Homebridge IP:</label>
+                        <label for="homebridge-ip">Homebridge IP:</label>
                         <input type="text" id="homebridge-ip" placeholder="192.168.1.100">
-                        <label>Homebridge Port:</label>
+                        <label for="homebridge-port">Homebridge Port:</label>
                         <input type="number" id="homebridge-port" value="51826">
-                        <label>Homebridge PIN:</label>
+                        <label for="homebridge-pin">Homebridge PIN:</label>
                         <input type="text" id="homebridge-pin" placeholder="123-45-678">
                     </div>
                 </div>
@@ -211,7 +217,7 @@
                 <div id="walking-controls" style="display: none; margin: 16px 0;">
                     <h4>Walking Setup</h4>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 12px 0;">
-                        <select id="device-type-select">
+                        <select id="device-type-select" aria-label="Device Type">
                             <option value="">Select device type...</option>
                             <option value="router">Router/Main AP</option>
                             <option value="pod">WiFi Pod/Extender</option>
@@ -220,7 +226,7 @@
                             <option value="camera">Security Camera</option>
                             <option value="speaker">Smart Speaker</option>
                         </select>
-                        <input type="text" id="setup-codes" placeholder="Setup codes/PIN">
+                        <input type="text" id="setup-codes" placeholder="Setup codes/PIN" aria-label="Setup Codes or PIN">
                     </div>
                     <button id="mark-location" class="btn-primary">📍 Mark Current Location</button>
                 </div>
@@ -237,15 +243,15 @@
         <div class="modal-content">
             <h3>Create Automation Rule</h3>
             <form id="automation-form">
-                <label>Rule Name:</label>
+                <label for="rule-name">Rule Name:</label>
                 <input type="text" id="rule-name" required>
                 
-                <label>Trigger Person:</label>
+                <label for="trigger-person">Trigger Person:</label>
                 <select id="trigger-person">
                     <option value="">Select person...</option>
                 </select>
                 
-                <label>Zone (Room):</label>
+                <label for="trigger-zone">Zone (Room):</label>
                 <select id="trigger-zone">
                     <option value="living-room">Living Room</option>
                     <option value="kitchen">Kitchen</option>
@@ -253,7 +259,7 @@
                     <option value="bathroom">Bathroom</option>
                 </select>
                 
-                <label>Action Type:</label>
+                <label for="action-type">Action Type:</label>
                 <select id="action-type">
                     <option value="lighting">Lighting</option>
                     <option value="music">Music</option>

@@ -748,20 +748,26 @@ class WiFiTriangulationApp {
         const entry = document.createElement('div');
         entry.className = 'manual-network-entry';
         entry.innerHTML = `
-            <label>Network Name (SSID):</label>
-            <input type="text" class="manual-ssid" placeholder="Network name">
-            <label>Location:</label>
-            <select class="manual-location">
-                <option value="1">Floor 1</option>
-                <option value="2">Floor 2</option>
-                <option value="3">Floor 3</option>
-            </select>
-            <label>Device Type:</label>
-            <select class="manual-type">
-                <option value="router">Main Router</option>
-                <option value="pod">WiFi Pod/Extender</option>
-                <option value="repeater">Repeater</option>
-            </select>
+            <label>
+                Network Name (SSID):
+                <input type="text" class="manual-ssid" placeholder="Network name">
+            </label>
+            <label>
+                Location:
+                <select class="manual-location">
+                    <option value="1">Floor 1</option>
+                    <option value="2">Floor 2</option>
+                    <option value="3">Floor 3</option>
+                </select>
+            </label>
+            <label>
+                Device Type:
+                <select class="manual-type">
+                    <option value="router">Main Router</option>
+                    <option value="pod">WiFi Pod/Extender</option>
+                    <option value="repeater">Repeater</option>
+                </select>
+            </label>
             <button class="btn-secondary" onclick="this.parentElement.remove()" style="margin-top: 8px;">Remove</button>
         `;
         container.appendChild(entry);

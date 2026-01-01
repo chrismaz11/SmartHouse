@@ -171,8 +171,11 @@ class WiFiTriangulationApp {
     switchView(viewName) {
         document.querySelectorAll('.nav-btn').forEach(btn => {
             btn.classList.remove('active');
+            btn.removeAttribute('aria-current');
         });
-        document.querySelector(`[data-view="${viewName}"]`).classList.add('active');
+        const activeBtn = document.querySelector(`[data-view="${viewName}"]`);
+        activeBtn.classList.add('active');
+        activeBtn.setAttribute('aria-current', 'page');
 
         document.querySelectorAll('.view').forEach(view => {
             view.classList.remove('active');

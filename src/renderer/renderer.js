@@ -505,6 +505,8 @@ class WiFiTriangulationApp {
             refPower: parseInt(document.getElementById('ref-power').value),
             homebridgeIp: document.getElementById('homebridge-ip').value,
             homebridgePort: parseInt(document.getElementById('homebridge-port').value),
+            homebridgeUsername: document.getElementById('homebridge-username').value,
+            homebridgePassword: document.getElementById('homebridge-password').value,
             homebridgePin: document.getElementById('homebridge-pin').value
         };
 
@@ -532,6 +534,8 @@ class WiFiTriangulationApp {
             if (settings.refPower) document.getElementById('ref-power').value = settings.refPower;
             if (settings.homebridgeIp) document.getElementById('homebridge-ip').value = settings.homebridgeIp;
             if (settings.homebridgePort) document.getElementById('homebridge-port').value = settings.homebridgePort;
+            if (settings.homebridgeUsername) document.getElementById('homebridge-username').value = settings.homebridgeUsername;
+            if (settings.homebridgePassword) document.getElementById('homebridge-password').value = settings.homebridgePassword;
             if (settings.homebridgePin) document.getElementById('homebridge-pin').value = settings.homebridgePin;
         } catch (error) {
             console.error('Failed to load settings:', error);
@@ -557,7 +561,7 @@ class WiFiTriangulationApp {
             <p>${this.accessPoints.length} access points configured</p>
             ${this.accessPoints.map(ap => `
                 <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;">
-                    ${ap.ssid || 'Unknown'} (${ap.signal_level}dBm)
+                    ${this.escapeHtml(ap.ssid || 'Unknown')} (${ap.signal_level}dBm)
                 </div>
             `).join('')}
         `;

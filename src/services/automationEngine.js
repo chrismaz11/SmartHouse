@@ -1,4 +1,5 @@
 const { GoogleGenerativeAI } = require('@google/generative-ai');
+const axios = require('axios');
 const bonjour = require('bonjour')();
 const fs = require('fs').promises;
 const path = require('path');
@@ -9,13 +10,76 @@ class AutomationEngine {
     this.geminiClient = null;
     this.homebridgeDevices = new Map();
     this.configPath = path.join(__dirname, '../config/automations.json');
+    this.homebridgeConfig = {
+      ip: '127.0.0.1',
+      port: 8581,
+      token: null,
+      username: 'admin',
+      password: 'admin' // Default
+    };
   }
 
   async initialize() {
     await this.loadAutomationConfig();
+    await this.loadSettings(); // Load settings to get Homebridge config
     await this.initializeGemini();
+    await this.authenticateHomebridge();
     this.discoverHomebridgeDevices();
     this.startAutomationEngine();
+  }
+
+  async authenticateHomebridge() {
+    try {
+      const baseUrl = `http://${this.homebridgeConfig.ip}:${this.homebridgeConfig.port}`;
+      console.log(`Authenticating with Homebridge at ${baseUrl}...`);
+
+      const response = await axios.post(`${baseUrl}/api/auth/login`, {
+        username: this.homebridgeConfig.username,
+        password: this.homebridgeConfig.password,
+        otp: "string" // 2FA code if enabled, not handling for now
+      });
+
+      if (response.data && response.data.access_token) {
+        this.homebridgeConfig.token = response.data.access_token;
+        console.log('Successfully authenticated with Homebridge Config UI X');
+        await this.fetchHomebridgeAccessories();
+      }
+    } catch (error) {
+      console.error('Failed to authenticate with Homebridge:', error.message);
+      if (error.response) {
+        console.error('Response data:', error.response.data);
+      }
+      console.warn('Using default "admin/admin". If you changed the password, please update settings.');
+    }
+  }
+
+  async fetchHomebridgeAccessories() {
+    if (!this.homebridgeConfig.token) return;
+
+    try {
+      const baseUrl = `http://${this.homebridgeConfig.ip}:${this.homebridgeConfig.port}`;
+      const response = await axios.get(`${baseUrl}/api/accessories`, {
+        headers: { Authorization: `Bearer ${this.homebridgeConfig.token}` }
+      });
+
+      if (Array.isArray(response.data)) {
+        response.data.forEach(accessory => {
+           // Simplify accessory data for our use
+           const device = {
+             aid: accessory.aid,
+             iid: accessory.iid,
+             name: accessory.serviceName || accessory.humanType,
+             type: this.inferDeviceType(accessory.serviceName || accessory.humanType),
+             uuid: accessory.uuid,
+             characteristics: accessory.serviceCharacteristics || []
+           };
+           this.homebridgeDevices.set(device.name, device);
+        });
+        console.log(`Fetched ${this.homebridgeDevices.size} accessories from Homebridge API.`);
+      }
+    } catch (error) {
+      console.error('Failed to fetch accessories:', error.message);
+    }
   }
 
   async initializeGemini() {
@@ -32,14 +96,19 @@ class AutomationEngine {
 
   discoverHomebridgeDevices() {
     // Discover Homebridge accessories via Bonjour/mDNS
+    // This is still useful as a fallback or for local discovery of HAP services not managed by Config UI X
     bonjour.find({ type: 'hap' }, (service) => {
-      console.log('Found Homebridge device:', service.name);
-      this.homebridgeDevices.set(service.name, {
-        name: service.name,
-        host: service.host,
-        port: service.port,
-        type: this.inferDeviceType(service.name)
-      });
+      console.log('Found Homebridge device via Bonjour:', service.name);
+      // Only add if not already found via API
+      if (!this.homebridgeDevices.has(service.name)) {
+        this.homebridgeDevices.set(service.name, {
+          name: service.name,
+          host: service.host,
+          port: service.port,
+          type: this.inferDeviceType(service.name),
+          source: 'bonjour'
+        });
+      }
     });
   }
 
@@ -116,6 +185,26 @@ class AutomationEngine {
     }
   }
 
+  async setAccessoryCharacteristic(uniqueId, characteristicType, value) {
+     if (!this.homebridgeConfig.token) {
+       console.warn('Cannot control device: No Homebridge token.');
+       return;
+     }
+
+     const baseUrl = `http://${this.homebridgeConfig.ip}:${this.homebridgeConfig.port}`;
+     try {
+       await axios.put(`${baseUrl}/api/accessories/${uniqueId}`, {
+         characteristicType: characteristicType,
+         value: value
+       }, {
+        headers: { Authorization: `Bearer ${this.homebridgeConfig.token}` }
+       });
+       console.log(`Set ${uniqueId} ${characteristicType} to ${value}`);
+     } catch (error) {
+       console.error(`Failed to set characteristic for ${uniqueId}:`, error.message);
+     }
+  }
+
   async controlHomebridgeLights(theme, room) {
     const lights = Array.from(this.homebridgeDevices.values())
       .filter(device => device.type === 'light');
@@ -123,7 +212,17 @@ class AutomationEngine {
     for (const light of lights) {
       try {
         console.log(`Setting ${light.name} to theme:`, theme);
-        // Would send HTTP requests to Homebridge API here
+
+        // If device has a UUID, use the API
+        if (light.uuid) {
+            await this.setAccessoryCharacteristic(light.uuid, 'On', true);
+            if (theme.brightness) {
+               await this.setAccessoryCharacteristic(light.uuid, 'Brightness', theme.brightness);
+            }
+        } else {
+             console.log('Cannot control light (no UUID, likely Bonjour discovered only):', light.name);
+        }
+
       } catch (error) {
         console.error(`Failed to control ${light.name}:`, error);
       }
@@ -149,7 +248,11 @@ class AutomationEngine {
       .find(d => d.name.toLowerCase().includes(deviceName.toLowerCase()));
     
     if (device) {
-      console.log(`${action} ${device.name}`);
+        console.log(`${action} ${device.name}`);
+        if (device.uuid) {
+             const value = action === 'on';
+             await this.setAccessoryCharacteristic(device.uuid, 'On', value);
+        }
     }
   }
 
@@ -182,6 +285,12 @@ class AutomationEngine {
     
     if (devices.length > 0) {
       console.log(`Testing ${deviceType}:`, devices.map(d => d.name));
+      // Trigger a test action on the first device found
+      if (devices[0].uuid) {
+          // Toggle it to prove control
+          await this.setAccessoryCharacteristic(devices[0].uuid, 'On', true);
+          setTimeout(() => this.setAccessoryCharacteristic(devices[0].uuid, 'On', false), 2000);
+      }
       return true;
     }
     return false;
@@ -214,7 +323,14 @@ class AutomationEngine {
   async loadSettings() {
     try {
       const data = await fs.readFile(path.join(__dirname, '../config/settings.json'), 'utf8');
-      return JSON.parse(data);
+      const settings = JSON.parse(data);
+
+      if (settings.homebridgeIp) this.homebridgeConfig.ip = settings.homebridgeIp;
+      if (settings.homebridgePort) this.homebridgeConfig.port = settings.homebridgePort;
+      if (settings.homebridgeUsername) this.homebridgeConfig.username = settings.homebridgeUsername;
+      if (settings.homebridgePassword) this.homebridgeConfig.password = settings.homebridgePassword;
+
+      return settings;
     } catch {
       return {};
     }

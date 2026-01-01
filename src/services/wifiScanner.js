@@ -9,6 +9,9 @@ class WiFiScanner {
     this.networks = [];
     this.accessPoints = [];
     this.configPath = path.join(__dirname, '../config/access-points.json');
+    this.lastScanTime = 0;
+    this.scanPromise = null;
+    this.CACHE_DURATION = 5000; // 5 seconds cache
 
     // Select strategy based on platform
     if (process.platform === 'linux') {
@@ -30,26 +33,47 @@ class WiFiScanner {
     this.startPeriodicScanning();
   }
 
-  async scanNetworks() {
-    try {
-      this.networks = await this.strategy.scan();
-      if (this.networks.length === 0) {
-        throw new Error('No networks found');
-      }
-    } catch (error) {
-      console.log(`Scanning with ${this.strategy.constructor.name} failed or found nothing, using MockStrategy.`);
-      console.error(error.message); // Log the actual error for debugging
-      try {
-        this.networks = await this.mockStrategy.scan();
-      } catch (mockError) {
-        console.error('Mock strategy failed:', mockError);
-        this.networks = [];
-      }
+  async scanNetworks(force = false) {
+    // ⚡ Bolt: Return cached results if fresh enough
+    if (!force && (Date.now() - this.lastScanTime) < this.CACHE_DURATION && this.networks.length > 0) {
+      return this.networks;
     }
-    
-    this.identifyAccessPoints();
-    console.log('Found networks:', this.networks);
-    return this.networks;
+
+    // ⚡ Bolt: Return existing promise if scan is already in progress (request coalescing)
+    if (this.scanPromise) {
+      return this.scanPromise;
+    }
+
+    this.scanPromise = (async () => {
+      try {
+        let networks = [];
+        try {
+          networks = await this.strategy.scan();
+          if (networks.length === 0) {
+            throw new Error('No networks found');
+          }
+        } catch (error) {
+          console.log(`Scanning with ${this.strategy.constructor.name} failed or found nothing, using MockStrategy.`);
+          console.error(error.message); // Log the actual error for debugging
+          try {
+            networks = await this.mockStrategy.scan();
+          } catch (mockError) {
+            console.error('Mock strategy failed:', mockError);
+            networks = [];
+          }
+        }
+
+        this.networks = networks;
+        this.lastScanTime = Date.now();
+        this.identifyAccessPoints();
+        console.log('Found networks:', this.networks.length);
+        return this.networks;
+      } finally {
+        this.scanPromise = null;
+      }
+    })();
+
+    return this.scanPromise;
   }
 
   identifyAccessPoints() {

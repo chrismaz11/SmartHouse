@@ -558,7 +558,7 @@ class WiFiTriangulationApp {
             <p>${this.accessPoints.length} access points configured</p>
             ${this.accessPoints.map(ap => `
                 <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;">
-                    ${ap.ssid || 'Unknown'} (${ap.signal_level}dBm)
+                    ${this.escapeHtml(ap.ssid || 'Unknown')} (${ap.signal_level}dBm)
                 </div>
             `).join('')}
         `;

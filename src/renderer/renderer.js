@@ -29,6 +29,24 @@ class WiFiTriangulationApp {
             .replace(/'/g, "&#039;");
     }
 
+    async handleAsyncAction(buttonId, actionFn, loadingText = 'Processing...') {
+        const btn = document.getElementById(buttonId);
+        if (!btn) return;
+
+        const originalText = btn.textContent;
+        btn.textContent = loadingText;
+        btn.disabled = true;
+        btn.style.cursor = 'wait';
+
+        try {
+            await actionFn();
+        } finally {
+            btn.textContent = originalText;
+            btn.disabled = false;
+            btn.style.cursor = '';
+        }
+    }
+
     async init() {
         this.setupEventListeners();
         this.setupCanvas();
@@ -50,7 +68,7 @@ class WiFiTriangulationApp {
 
         // Network scanning
         document.getElementById('scan-btn').addEventListener('click', () => {
-            this.scanNetworks();
+            this.handleAsyncAction('scan-btn', () => this.scanNetworks(), 'Scanning...');
         });
 
         // Manual network entry
@@ -72,7 +90,7 @@ class WiFiTriangulationApp {
 
         // Device refresh
         document.getElementById('refresh-devices').addEventListener('click', () => {
-            this.refreshDevices();
+            this.handleAsyncAction('refresh-devices', () => this.refreshDevices(), 'Refreshing...');
         });
 
         // Floor plan controls
@@ -136,7 +154,7 @@ class WiFiTriangulationApp {
 
         // Settings
         document.getElementById('save-settings').addEventListener('click', () => {
-            this.saveSettings();
+            this.handleAsyncAction('save-settings', () => this.saveSettings(), 'Saving...');
         });
 
         // Intelligent Setup

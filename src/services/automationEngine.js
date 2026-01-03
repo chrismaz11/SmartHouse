@@ -279,6 +279,16 @@ class AutomationEngine {
     return true;
   }
 
+  async deleteAutomation(id) {
+    const initialLength = this.automations.length;
+    this.automations = this.automations.filter(a => a.id !== id);
+    if (this.automations.length !== initialLength) {
+      await this.saveAutomationConfig();
+      return true;
+    }
+    return false;
+  }
+
   async testSmartDevice(deviceType, action) {
     const devices = Array.from(this.homebridgeDevices.values())
       .filter(device => device.type === deviceType || device.name.toLowerCase().includes(deviceType));

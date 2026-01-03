@@ -114,6 +114,19 @@ class WiFiTriangulationApp {
             this.createAutomation();
         });
 
+        // Automation deletion (Event Delegation)
+        const automationRules = document.getElementById('automation-rules');
+        if (automationRules) {
+            automationRules.addEventListener('click', (e) => {
+                if (e.target.classList.contains('delete-automation-btn')) {
+                    const id = e.target.dataset.id;
+                    if (id) {
+                        this.deleteAutomation(id);
+                    }
+                }
+            });
+        }
+
         // Smart device testing
         document.querySelectorAll('.test-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
@@ -450,7 +463,7 @@ class WiFiTriangulationApp {
                         ${this.escapeHtml(automation.trigger)} • ${this.escapeHtml(automation.type)} • ${this.escapeHtml(automation.zone || 'Any zone')}
                     </div>
                 </div>
-                <button class="btn-secondary" onclick="this.deleteAutomation('${this.escapeHtml(automation.id)}')">Delete</button>
+                <button class="btn-secondary delete-automation-btn" data-id="${this.escapeHtml(automation.id)}">Delete</button>
             </div>
         `).join('');
     }
@@ -483,6 +496,22 @@ class WiFiTriangulationApp {
         await ipcRenderer.invoke('save-automation', automation);
         await this.loadAutomations();
         this.hideAutomationModal();
+    }
+
+    async deleteAutomation(id) {
+        if (!confirm('Are you sure you want to delete this automation?')) {
+            return;
+        }
+
+        try {
+            // Note: The backend handler 'delete-automation' needs to be implemented in main.js
+            // This is a secure implementation on the renderer side.
+            await ipcRenderer.invoke('delete-automation', id);
+            await this.loadAutomations();
+        } catch (error) {
+            console.error('Failed to delete automation:', error);
+            this.showNotification('Failed to delete automation', 'error');
+        }
     }
 
     async testSmartDevice(deviceType) {

@@ -105,6 +105,15 @@ ipcMain.handle('save-ap-positions', async (event, positions) => {
   }
 });
 
+ipcMain.handle('delete-automation', async (event, id) => {
+  try {
+    return automationEngine ? await automationEngine.deleteAutomation(id) : false;
+  } catch (error) {
+    console.error('Delete automation error:', error);
+    return false;
+  }
+});
+
 ipcMain.handle('get-devices', async () => {
   try {
     return deviceTracker ? await deviceTracker.getDevices() : [];

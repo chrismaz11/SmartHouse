@@ -14,6 +14,12 @@ class WiFiTriangulationApp {
         this.zoom = 1;
         this.panX = 0;
         this.panY = 0;
+
+        // ⚡ Bolt: Cache for rendering optimization
+        this.lastRenderedNetworksHtml = '';
+        this.lastRenderedDevicesHtml = '';
+        this.lastRenderedAccessPointsHtml = '';
+        this.lastRenderedAutomationsHtml = '';
         
         this.init();
     }
@@ -255,10 +261,11 @@ class WiFiTriangulationApp {
         
         if (this.networks.length === 0) {
             container.innerHTML = '<p class="loading">No networks found</p>';
+            this.lastRenderedNetworksHtml = '';
             return;
         }
 
-        container.innerHTML = this.networks.map(network => `
+        const newHtml = this.networks.map(network => `
             <div class="network-item">
                 <div class="network-info">
                     <div class="network-name">${this.escapeHtml(network.ssid || 'Hidden Network')}</div>
@@ -272,12 +279,20 @@ class WiFiTriangulationApp {
                 </div>
             </div>
         `).join('');
+
+        // ⚡ Bolt: Check if HTML changed before re-rendering
+        if (newHtml === this.lastRenderedNetworksHtml) {
+            return;
+        }
+        this.lastRenderedNetworksHtml = newHtml;
+
+        container.innerHTML = newHtml;
     }
 
     updateAccessPointsDisplay() {
         const container = document.getElementById('ap-positions');
         
-        container.innerHTML = this.accessPoints.map(ap => `
+        const newHtml = this.accessPoints.map(ap => `
             <div class="network-item">
                 <div class="network-info">
                     <div class="network-name">${this.escapeHtml(ap.ssid || 'Access Point')}</div>
@@ -290,6 +305,14 @@ class WiFiTriangulationApp {
                 </div>
             </div>
         `).join('');
+
+        // ⚡ Bolt: Check if HTML changed before re-rendering
+        if (newHtml === this.lastRenderedAccessPointsHtml) {
+            return;
+        }
+        this.lastRenderedAccessPointsHtml = newHtml;
+
+        container.innerHTML = newHtml;
     }
 
     updateDeviceDisplay() {
@@ -297,10 +320,11 @@ class WiFiTriangulationApp {
         
         if (this.devices.length === 0) {
             container.innerHTML = '<p class="loading">No devices detected</p>';
+            this.lastRenderedDevicesHtml = '';
             return;
         }
 
-        container.innerHTML = this.devices.map(device => `
+        const newHtml = this.devices.map(device => `
             <div class="device-item">
                 <div class="device-info">
                     <div class="device-name">${this.escapeHtml(device.tag || device.mac)}</div>
@@ -314,6 +338,13 @@ class WiFiTriangulationApp {
             </div>
         `).join('');
 
+        // ⚡ Bolt: Check if HTML changed before re-rendering
+        if (newHtml === this.lastRenderedDevicesHtml) {
+            return;
+        }
+        this.lastRenderedDevicesHtml = newHtml;
+
+        container.innerHTML = newHtml;
         this.updateDeviceTagging();
     }
 
@@ -452,10 +483,11 @@ class WiFiTriangulationApp {
         
         if (this.automations.length === 0) {
             container.innerHTML = '<p class="loading">No automation rules configured</p>';
+            this.lastRenderedAutomationsHtml = '';
             return;
         }
 
-        container.innerHTML = this.automations.map(automation => `
+        const newHtml = this.automations.map(automation => `
             <div class="automation-item">
                 <div class="device-info">
                     <div class="device-name">${this.escapeHtml(automation.name)}</div>
@@ -466,6 +498,14 @@ class WiFiTriangulationApp {
                 <button class="btn-secondary delete-automation-btn" data-id="${this.escapeHtml(automation.id)}">Delete</button>
             </div>
         `).join('');
+
+        // ⚡ Bolt: Check if HTML changed before re-rendering
+        if (newHtml === this.lastRenderedAutomationsHtml) {
+            return;
+        }
+        this.lastRenderedAutomationsHtml = newHtml;
+
+        container.innerHTML = newHtml;
     }
 
     showAutomationModal() {

@@ -29,6 +29,29 @@ class WiFiTriangulationApp {
             .replace(/'/g, "&#039;");
     }
 
+    async handleAsyncAction(button, actionFn, loadingText = 'Loading...') {
+        const originalText = button.innerHTML;
+        // In case we want to preserve tooltip or other attributes, we could store them here.
+
+        button.disabled = true;
+        // Add spinner and loading text. The spinner uses existing CSS class.
+        button.innerHTML = `
+            <span class="spinner" style="display: inline-block; width: 12px; height: 12px; border-width: 2px; vertical-align: middle; margin-right: 6px;"></span>
+            ${loadingText}
+        `;
+        button.setAttribute('aria-busy', 'true');
+        button.style.cursor = 'wait';
+
+        try {
+            await actionFn();
+        } finally {
+            button.disabled = false;
+            button.innerHTML = originalText;
+            button.removeAttribute('aria-busy');
+            button.style.cursor = '';
+        }
+    }
+
     async init() {
         this.setupEventListeners();
         this.setupCanvas();
@@ -49,8 +72,9 @@ class WiFiTriangulationApp {
         });
 
         // Network scanning
-        document.getElementById('scan-btn').addEventListener('click', () => {
-            this.scanNetworks();
+        const scanBtn = document.getElementById('scan-btn');
+        scanBtn.addEventListener('click', () => {
+            this.handleAsyncAction(scanBtn, () => this.scanNetworks(), 'Scanning...');
         });
 
         // Manual network entry
@@ -62,8 +86,9 @@ class WiFiTriangulationApp {
             this.hideManualNetworkEntry();
         });
 
-        document.getElementById('save-manual-networks').addEventListener('click', () => {
-            this.saveManualNetworks();
+        const saveManualBtn = document.getElementById('save-manual-networks');
+        saveManualBtn.addEventListener('click', () => {
+            this.handleAsyncAction(saveManualBtn, () => this.saveManualNetworks(), 'Saving...');
         });
 
         document.getElementById('add-network-entry').addEventListener('click', () => {
@@ -71,8 +96,9 @@ class WiFiTriangulationApp {
         });
 
         // Device refresh
-        document.getElementById('refresh-devices').addEventListener('click', () => {
-            this.refreshDevices();
+        const refreshBtn = document.getElementById('refresh-devices');
+        refreshBtn.addEventListener('click', () => {
+            this.handleAsyncAction(refreshBtn, () => this.refreshDevices(), 'Refreshing...');
         });
 
         // Floor plan controls
@@ -135,8 +161,9 @@ class WiFiTriangulationApp {
         });
 
         // Settings
-        document.getElementById('save-settings').addEventListener('click', () => {
-            this.saveSettings();
+        const saveSettingsBtn = document.getElementById('save-settings');
+        saveSettingsBtn.addEventListener('click', () => {
+            this.handleAsyncAction(saveSettingsBtn, () => this.saveSettings(), 'Saving...');
         });
 
         // Intelligent Setup

@@ -219,9 +219,14 @@ class WiFiTriangulationApp {
     }
 
     async scanNetworks() {
-        this.updateStatus('Scanning networks...', 'connecting');
+        const scanBtn = document.getElementById('scan-btn');
+        const originalText = scanBtn.innerHTML;
         
         try {
+            this.updateStatus('Scanning networks...', 'connecting');
+            scanBtn.disabled = true;
+            scanBtn.innerHTML = '<div class="spinner"></div> Scanning...';
+
             this.networks = await ipcRenderer.invoke('scan-wifi');
             this.accessPoints = await ipcRenderer.invoke('get-access-points');
             
@@ -233,10 +238,16 @@ class WiFiTriangulationApp {
         } catch (error) {
             console.error('Network scan failed:', error);
             this.updateStatus('Scan failed', 'error');
+        } finally {
+            scanBtn.disabled = false;
+            scanBtn.innerHTML = originalText;
         }
     }
 
     async refreshDevices() {
+        const refreshBtn = document.getElementById('refresh-devices');
+        if (refreshBtn) refreshBtn.classList.add('loading');
+
         try {
             this.devices = await ipcRenderer.invoke('get-devices');
             const devicePositions = await ipcRenderer.invoke('get-device-positions');
@@ -247,6 +258,8 @@ class WiFiTriangulationApp {
             this.drawFloorPlan();
         } catch (error) {
             console.error('Device refresh failed:', error);
+        } finally {
+            if (refreshBtn) refreshBtn.classList.remove('loading');
         }
     }
 

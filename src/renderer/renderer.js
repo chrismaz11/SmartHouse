@@ -29,6 +29,26 @@ class WiFiTriangulationApp {
             .replace(/'/g, "&#039;");
     }
 
+    setButtonLoading(buttonId, isLoading, loadingText = null) {
+        const btn = document.getElementById(buttonId);
+        if (!btn) return;
+
+        if (isLoading) {
+            btn.dataset.originalHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = `<span class="spinner" style="display: inline-block; margin-right: 8px; vertical-align: middle;"></span>${loadingText || 'Loading...'}`;
+        } else {
+            btn.disabled = false;
+            // Restore original HTML if available
+            if (btn.dataset.originalHtml) {
+                btn.innerHTML = btn.dataset.originalHtml;
+            } else {
+                 // Fallback
+                 btn.textContent = loadingText || btn.textContent.replace('Loading...', '').trim();
+            }
+        }
+    }
+
     async init() {
         this.setupEventListeners();
         this.setupCanvas();
@@ -220,6 +240,7 @@ class WiFiTriangulationApp {
 
     async scanNetworks() {
         this.updateStatus('Scanning networks...', 'connecting');
+        this.setButtonLoading('scan-btn', true, 'Scanning...');
         
         try {
             this.networks = await ipcRenderer.invoke('scan-wifi');
@@ -233,10 +254,13 @@ class WiFiTriangulationApp {
         } catch (error) {
             console.error('Network scan failed:', error);
             this.updateStatus('Scan failed', 'error');
+        } finally {
+            this.setButtonLoading('scan-btn', false);
         }
     }
 
     async refreshDevices() {
+        this.setButtonLoading('refresh-devices', true, 'Refreshing...');
         try {
             this.devices = await ipcRenderer.invoke('get-devices');
             const devicePositions = await ipcRenderer.invoke('get-device-positions');
@@ -247,6 +271,8 @@ class WiFiTriangulationApp {
             this.drawFloorPlan();
         } catch (error) {
             console.error('Device refresh failed:', error);
+        } finally {
+            this.setButtonLoading('refresh-devices', false);
         }
     }
 

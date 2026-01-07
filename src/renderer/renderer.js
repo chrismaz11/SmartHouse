@@ -29,6 +29,17 @@ class WiFiTriangulationApp {
             .replace(/'/g, "&#039;");
     }
 
+    setButtonLoading(button, isLoading) {
+        if (isLoading) {
+            button.dataset.originalText = button.innerHTML;
+            button.disabled = true;
+            button.innerHTML = '<div class="spinner"></div> Scanning...';
+        } else {
+            button.disabled = false;
+            button.innerHTML = button.dataset.originalText || 'Scan Networks';
+        }
+    }
+
     async init() {
         this.setupEventListeners();
         this.setupCanvas();
@@ -49,8 +60,11 @@ class WiFiTriangulationApp {
         });
 
         // Network scanning
-        document.getElementById('scan-btn').addEventListener('click', () => {
-            this.scanNetworks();
+        document.getElementById('scan-btn').addEventListener('click', async (e) => {
+            const btn = e.target;
+            this.setButtonLoading(btn, true);
+            await this.scanNetworks();
+            this.setButtonLoading(btn, false);
         });
 
         // Manual network entry

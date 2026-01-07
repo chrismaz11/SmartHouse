@@ -77,6 +77,20 @@ async function loadSettingsSync() {
   }
 }
 
+function sanitizeSettingsForLog(settings) {
+  if (!settings) return settings;
+  const sanitized = { ...settings };
+  const sensitiveKeys = ['password', 'key', 'secret', 'token', 'pin'];
+
+  Object.keys(sanitized).forEach(key => {
+    if (sensitiveKeys.some(sensitive => key.toLowerCase().includes(sensitive))) {
+      sanitized[key] = '***REDACTED***';
+    }
+  });
+
+  return sanitized;
+}
+
 // IPC Handlers
 ipcMain.handle('scan-wifi', async () => {
   try {
@@ -173,7 +187,7 @@ ipcMain.handle('save-settings', async (event, settings) => {
     const configDir = path.join(__dirname, 'config');
     await fs.mkdir(configDir, { recursive: true });
     await fs.writeFile(path.join(configDir, 'settings.json'), JSON.stringify(settings, null, 2));
-    console.log('Settings saved:', settings);
+    console.log('Settings saved:', sanitizeSettingsForLog(settings));
     
     // Initialize Gemini Evolution if API key was added
     if (settings.geminiApiKey && geminiEvolution) {
@@ -238,7 +252,7 @@ ipcMain.handle('load-settings', async () => {
   try {
     const data = await fs.readFile(path.join(__dirname, 'config/settings.json'), 'utf8');
     const settings = JSON.parse(data);
-    console.log('Settings loaded:', settings);
+    console.log('Settings loaded:', sanitizeSettingsForLog(settings));
     return settings;
   } catch (error) {
     console.log('No settings file found, using defaults');

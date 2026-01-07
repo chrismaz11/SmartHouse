@@ -606,8 +606,12 @@ class WiFiTriangulationApp {
     }
 
     updateDevicePositions(devicePositions) {
+        // ⚡ Bolt: Use Map for O(1) lookup instead of O(N) array search inside loop
+        // Reduces complexity from O(N*M) to O(N+M)
+        const deviceMap = new Map(this.devices.map(d => [d.mac, d]));
+
         devicePositions.forEach(devicePos => {
-            const device = this.devices.find(d => d.mac === devicePos.mac);
+            const device = deviceMap.get(devicePos.mac);
             if (device) {
                 device.position = devicePos.position;
                 device.tag = devicePos.tag;

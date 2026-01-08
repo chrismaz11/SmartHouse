@@ -49,8 +49,8 @@ class WiFiTriangulationApp {
         });
 
         // Network scanning
-        document.getElementById('scan-btn').addEventListener('click', () => {
-            this.scanNetworks();
+        document.getElementById('scan-btn').addEventListener('click', (e) => {
+            this.scanNetworks(e.currentTarget);
         });
 
         // Manual network entry
@@ -71,8 +71,8 @@ class WiFiTriangulationApp {
         });
 
         // Device refresh
-        document.getElementById('refresh-devices').addEventListener('click', () => {
-            this.refreshDevices();
+        document.getElementById('refresh-devices').addEventListener('click', (e) => {
+            this.refreshDevices(e.currentTarget);
         });
 
         // Floor plan controls
@@ -135,13 +135,13 @@ class WiFiTriangulationApp {
         });
 
         // Settings
-        document.getElementById('save-settings').addEventListener('click', () => {
-            this.saveSettings();
+        document.getElementById('save-settings').addEventListener('click', (e) => {
+            this.saveSettings(e.currentTarget);
         });
 
         // Intelligent Setup
-        document.getElementById('start-intelligent-setup').addEventListener('click', () => {
-            this.startIntelligentSetup();
+        document.getElementById('start-intelligent-setup').addEventListener('click', (e) => {
+            this.startIntelligentSetup(e.currentTarget);
         });
 
         document.getElementById('cancel-setup').addEventListener('click', () => {

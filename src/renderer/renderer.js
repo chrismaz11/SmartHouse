@@ -14,6 +14,12 @@ class WiFiTriangulationApp {
         this.zoom = 1;
         this.panX = 0;
         this.panY = 0;
+
+        // ⚡ Bolt: Cache for render optimization
+        this.lastRenderedNetworks = '';
+        this.lastRenderedAccessPoints = '';
+        this.lastRenderedDevices = '';
+        this.lastRenderedAutomations = '';
         
         this.init();
     }
@@ -251,10 +257,22 @@ class WiFiTriangulationApp {
     }
 
     updateNetworkDisplay() {
+        // ⚡ Bolt: Optimization - Only re-render if data changed
+        // We serialize essential fields to detect changes
+        const currentData = JSON.stringify(this.networks.map(n => ({
+            ssid: n.ssid,
+            bssid: n.bssid,
+            freq: n.frequency,
+            lvl: n.signal_level
+        })));
+
+        if (this.lastRenderedNetworks === currentData) return;
+
         const container = document.getElementById('wifi-networks');
         
         if (this.networks.length === 0) {
             container.innerHTML = '<p class="loading">No networks found</p>';
+            this.lastRenderedNetworks = currentData;
             return;
         }
 
@@ -272,9 +290,20 @@ class WiFiTriangulationApp {
                 </div>
             </div>
         `).join('');
+
+        this.lastRenderedNetworks = currentData;
     }
 
     updateAccessPointsDisplay() {
+        // ⚡ Bolt: Optimization - Only re-render if data changed
+        const currentData = JSON.stringify(this.accessPoints.map(ap => ({
+            ssid: ap.ssid,
+            pos: ap.position,
+            lvl: ap.signal_level
+        })));
+
+        if (this.lastRenderedAccessPoints === currentData) return;
+
         const container = document.getElementById('ap-positions');
         
         container.innerHTML = this.accessPoints.map(ap => `
@@ -290,13 +319,26 @@ class WiFiTriangulationApp {
                 </div>
             </div>
         `).join('');
+
+        this.lastRenderedAccessPoints = currentData;
     }
 
     updateDeviceDisplay() {
+        // ⚡ Bolt: Optimization - Only re-render if data changed
+        const currentData = JSON.stringify(this.devices.map(d => ({
+            mac: d.mac,
+            tag: d.tag,
+            seen: d.lastSeen,
+            rssi: d.rssi
+        })));
+
+        if (this.lastRenderedDevices === currentData) return;
+
         const container = document.getElementById('tracked-devices');
         
         if (this.devices.length === 0) {
             container.innerHTML = '<p class="loading">No devices detected</p>';
+            this.lastRenderedDevices = currentData;
             return;
         }
 
@@ -315,6 +357,7 @@ class WiFiTriangulationApp {
         `).join('');
 
         this.updateDeviceTagging();
+        this.lastRenderedDevices = currentData;
     }
 
     updateDeviceTagging() {

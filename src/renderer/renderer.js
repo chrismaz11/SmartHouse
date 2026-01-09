@@ -29,6 +29,17 @@ class WiFiTriangulationApp {
             .replace(/'/g, "&#039;");
     }
 
+    setButtonLoading(btn, isLoading, loadingText = 'Loading...') {
+        if (isLoading) {
+            btn.dataset.originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = `<div class="spinner" style="display: inline-block; vertical-align: middle; margin-right: 8px; border-color: rgba(255,255,255,0.3); border-top-color: white;"></div>${loadingText}`;
+        } else {
+            btn.disabled = false;
+            btn.innerHTML = btn.dataset.originalText || btn.innerText;
+        }
+    }
+
     async init() {
         this.setupEventListeners();
         this.setupCanvas();
@@ -130,7 +141,7 @@ class WiFiTriangulationApp {
         // Smart device testing
         document.querySelectorAll('.test-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
-                this.testSmartDevice(e.target.dataset.device);
+                this.testSmartDevice(e.currentTarget.dataset.device, e.currentTarget);
             });
         });
 
@@ -514,7 +525,8 @@ class WiFiTriangulationApp {
         }
     }
 
-    async testSmartDevice(deviceType) {
+    async testSmartDevice(deviceType, btn) {
+        if (btn) this.setButtonLoading(btn, true, 'Testing...');
         try {
             const result = await ipcRenderer.invoke('test-smart-device', deviceType, 'test');
             if (result) {
@@ -524,6 +536,8 @@ class WiFiTriangulationApp {
             }
         } catch (error) {
             this.showNotification(`${deviceType.toUpperCase()} test error!`, 'error');
+        } finally {
+            if (btn) this.setButtonLoading(btn, false);
         }
     }
 

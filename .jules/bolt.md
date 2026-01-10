@@ -1,3 +1,7 @@
-## 2024-05-23 - [Electron IPC and Rendering Loop]
-**Learning:** In Electron apps, unnecessary IPC calls and rendering loops are common performance sinks. A fixed-interval rendering loop (e.g., 5 seconds) that redraws canvas content even when data hasn't changed consumes CPU/GPU unnecessarily. Tying the redraw to the data update cycle (or user interaction) is a cleaner and more efficient pattern.
-**Action:** When working with canvas or heavy DOM updates in Electron, always verify if the update trigger is linked to actual data changes. Remove polling loops if event-driven updates are possible.
+## 2024-05-22 - [DOM Diffing for Polling UIs]
+**Learning:** Frequent `innerHTML` updates in polling loops (even with small lists) are surprisingly expensive due to layout thrashing. Simple string comparison checks before DOM updates are a highly effective, low-complexity optimization.
+**Action:** Always implement dirty checks for data received from polling mechanisms before touching the DOM.
+
+## 2024-05-22 - [Playwright Electron Verification]
+**Learning:** Verifying frontend logic in Electron apps using standard Playwright (without the Electron fixture) requires careful mocking of `window.electron` and `window.require` *before* script load (via `add_init_script`), as `renderer.js` often uses `require` or `ipcRenderer` at the top level.
+**Action:** When testing Electron renderers in headless browsers, always inject a full mock of the IPC bridge and module system.

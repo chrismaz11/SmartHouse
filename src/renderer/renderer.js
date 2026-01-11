@@ -624,8 +624,10 @@ class WiFiTriangulationApp {
     }
 
     showNotification(message, type = 'success') {
-        // Simple notification system
         const notification = document.createElement('div');
+        notification.setAttribute('role', type === 'error' ? 'alert' : 'status');
+        notification.setAttribute('aria-live', type === 'error' ? 'assertive' : 'polite');
+
         notification.style.cssText = `
             position: fixed;
             top: 20px;
@@ -636,13 +638,32 @@ class WiFiTriangulationApp {
             border-radius: 8px;
             z-index: 1001;
             font-size: 14px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            transform: translateY(-20px);
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         `;
-        notification.textContent = message;
+
+        const iconSpan = document.createElement('span');
+        iconSpan.textContent = type === 'error' ? '⚠️' : '✅';
+        iconSpan.style.marginRight = '8px';
+        iconSpan.setAttribute('aria-hidden', 'true');
+
+        notification.appendChild(iconSpan);
+        notification.appendChild(document.createTextNode(message));
         
         document.body.appendChild(notification);
         
+        // Trigger animation
+        requestAnimationFrame(() => {
+            notification.style.transform = 'translateY(0)';
+            notification.style.opacity = '1';
+        });
+
         setTimeout(() => {
-            notification.remove();
+            notification.style.transform = 'translateY(-20px)';
+            notification.style.opacity = '0';
+            setTimeout(() => notification.remove(), 300);
         }, 3000);
     }
 

@@ -14,6 +14,13 @@ class WiFiTriangulationApp {
         this.zoom = 1;
         this.panX = 0;
         this.panY = 0;
+
+        // ⚡ Bolt: Cache for DOM updates to prevent unnecessary reflows
+        this.lastRenderedNetworksHtml = '';
+        this.lastRenderedAccessPointsHtml = '';
+        this.lastRenderedDeviceDisplayHtml = '';
+        this.lastRenderedDeviceTaggingHtml = '';
+        this.lastRenderedAutomationHtml = '';
         
         this.init();
     }
@@ -254,11 +261,15 @@ class WiFiTriangulationApp {
         const container = document.getElementById('wifi-networks');
         
         if (this.networks.length === 0) {
-            container.innerHTML = '<p class="loading">No networks found</p>';
+            const html = '<p class="loading">No networks found</p>';
+            if (this.lastRenderedNetworksHtml !== html) {
+                container.innerHTML = html;
+                this.lastRenderedNetworksHtml = html;
+            }
             return;
         }
 
-        container.innerHTML = this.networks.map(network => `
+        const html = this.networks.map(network => `
             <div class="network-item">
                 <div class="network-info">
                     <div class="network-name">${this.escapeHtml(network.ssid || 'Hidden Network')}</div>
@@ -272,12 +283,18 @@ class WiFiTriangulationApp {
                 </div>
             </div>
         `).join('');
+
+        // ⚡ Bolt: Only update DOM if content changed
+        if (this.lastRenderedNetworksHtml !== html) {
+            container.innerHTML = html;
+            this.lastRenderedNetworksHtml = html;
+        }
     }
 
     updateAccessPointsDisplay() {
         const container = document.getElementById('ap-positions');
         
-        container.innerHTML = this.accessPoints.map(ap => `
+        const html = this.accessPoints.map(ap => `
             <div class="network-item">
                 <div class="network-info">
                     <div class="network-name">${this.escapeHtml(ap.ssid || 'Access Point')}</div>
@@ -290,17 +307,27 @@ class WiFiTriangulationApp {
                 </div>
             </div>
         `).join('');
+
+        // ⚡ Bolt: Only update DOM if content changed
+        if (this.lastRenderedAccessPointsHtml !== html) {
+            container.innerHTML = html;
+            this.lastRenderedAccessPointsHtml = html;
+        }
     }
 
     updateDeviceDisplay() {
         const container = document.getElementById('tracked-devices');
         
         if (this.devices.length === 0) {
-            container.innerHTML = '<p class="loading">No devices detected</p>';
+            const html = '<p class="loading">No devices detected</p>';
+            if (this.lastRenderedDeviceDisplayHtml !== html) {
+                container.innerHTML = html;
+                this.lastRenderedDeviceDisplayHtml = html;
+            }
             return;
         }
 
-        container.innerHTML = this.devices.map(device => `
+        const html = this.devices.map(device => `
             <div class="device-item">
                 <div class="device-info">
                     <div class="device-name">${this.escapeHtml(device.tag || device.mac)}</div>
@@ -314,13 +341,19 @@ class WiFiTriangulationApp {
             </div>
         `).join('');
 
+        // ⚡ Bolt: Only update DOM if content changed
+        if (this.lastRenderedDeviceDisplayHtml !== html) {
+            container.innerHTML = html;
+            this.lastRenderedDeviceDisplayHtml = html;
+        }
+
         this.updateDeviceTagging();
     }
 
     updateDeviceTagging() {
         const container = document.getElementById('device-tags');
         
-        container.innerHTML = this.devices.map(device => `
+        const html = this.devices.map(device => `
             <div style="margin-bottom: 12px;">
                 <label style="display: block; margin-bottom: 4px;">${this.escapeHtml(device.mac)}:</label>
                 <input type="text" 
@@ -331,18 +364,24 @@ class WiFiTriangulationApp {
             </div>
         `).join('');
 
-        // Add event listeners for tag inputs
-        container.querySelectorAll('input').forEach(input => {
-            input.addEventListener('blur', async () => {
-                const tags = {};
-                container.querySelectorAll('input').forEach(inp => {
-                    if (inp.value.trim()) {
-                        tags[inp.dataset.mac] = inp.value.trim();
-                    }
+        // ⚡ Bolt: Only update DOM if content changed to prevent losing focus
+        if (this.lastRenderedDeviceTaggingHtml !== html) {
+            container.innerHTML = html;
+            this.lastRenderedDeviceTaggingHtml = html;
+
+            // Add event listeners for tag inputs
+            container.querySelectorAll('input').forEach(input => {
+                input.addEventListener('blur', async () => {
+                    const tags = {};
+                    container.querySelectorAll('input').forEach(inp => {
+                        if (inp.value.trim()) {
+                            tags[inp.dataset.mac] = inp.value.trim();
+                        }
+                    });
+                    await ipcRenderer.invoke('save-device-tags', tags);
                 });
-                await ipcRenderer.invoke('save-device-tags', tags);
             });
-        });
+        }
     }
 
     renderSignalBars(signalLevel) {
@@ -451,11 +490,15 @@ class WiFiTriangulationApp {
         const container = document.getElementById('automation-rules');
         
         if (this.automations.length === 0) {
-            container.innerHTML = '<p class="loading">No automation rules configured</p>';
+            const html = '<p class="loading">No automation rules configured</p>';
+            if (this.lastRenderedAutomationHtml !== html) {
+                container.innerHTML = html;
+                this.lastRenderedAutomationHtml = html;
+            }
             return;
         }
 
-        container.innerHTML = this.automations.map(automation => `
+        const html = this.automations.map(automation => `
             <div class="automation-item">
                 <div class="device-info">
                     <div class="device-name">${this.escapeHtml(automation.name)}</div>
@@ -466,6 +509,12 @@ class WiFiTriangulationApp {
                 <button class="btn-secondary delete-automation-btn" data-id="${this.escapeHtml(automation.id)}">Delete</button>
             </div>
         `).join('');
+
+        // ⚡ Bolt: Only update DOM if content changed
+        if (this.lastRenderedAutomationHtml !== html) {
+            container.innerHTML = html;
+            this.lastRenderedAutomationHtml = html;
+        }
     }
 
     showAutomationModal() {

@@ -21,12 +21,15 @@ class WiFiTriangulationApp {
     escapeHtml(unsafe) {
         if (unsafe === null || unsafe === undefined) return '';
         const str = String(unsafe);
-        return str
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#039;");
+        // ⚡ Bolt: Optimize with single regex pass for O(n) performance
+        const map = {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#039;'
+        };
+        return str.replace(/[&<>"']/g, m => map[m]);
     }
 
     async init() {
@@ -238,8 +241,13 @@ class WiFiTriangulationApp {
 
     async refreshDevices() {
         try {
-            this.devices = await ipcRenderer.invoke('get-devices');
-            const devicePositions = await ipcRenderer.invoke('get-device-positions');
+            // ⚡ Bolt: Parallelize IPC calls to reduce total latency
+            const [devices, devicePositions] = await Promise.all([
+                ipcRenderer.invoke('get-devices'),
+                ipcRenderer.invoke('get-device-positions')
+            ]);
+
+            this.devices = devices;
             
             this.updateDeviceDisplay();
             this.updateDevicePositions(devicePositions);

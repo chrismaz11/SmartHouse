@@ -29,6 +29,30 @@ class WiFiTriangulationApp {
             .replace(/'/g, "&#039;");
     }
 
+    setButtonLoading(button, isLoading, loadingText = 'Loading...') {
+        if (!button) return;
+
+        if (isLoading) {
+            button.dataset.originalText = button.textContent;
+            button.disabled = true;
+            // Use inline styles to ensure proper alignment and contrast
+            button.innerHTML = `<span class="spinner" style="display: inline-block; vertical-align: middle; margin-right: 8px;"></span>${loadingText}`;
+
+            // Ensure spinner inside button is visible/white if button is primary
+            if (button.classList.contains('btn-primary')) {
+                 const spinner = button.querySelector('.spinner');
+                 if(spinner) {
+                    spinner.style.borderTopColor = '#ffffff';
+                    spinner.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+                    spinner.style.borderTopColor = '#ffffff';
+                 }
+            }
+        } else {
+            button.disabled = false;
+            button.textContent = button.dataset.originalText || 'Action';
+        }
+    }
+
     async init() {
         this.setupEventListeners();
         this.setupCanvas();
@@ -219,6 +243,8 @@ class WiFiTriangulationApp {
     }
 
     async scanNetworks() {
+        const btn = document.getElementById('scan-btn');
+        this.setButtonLoading(btn, true, 'Scanning...');
         this.updateStatus('Scanning networks...', 'connecting');
         
         try {
@@ -233,10 +259,15 @@ class WiFiTriangulationApp {
         } catch (error) {
             console.error('Network scan failed:', error);
             this.updateStatus('Scan failed', 'error');
+        } finally {
+            this.setButtonLoading(btn, false);
         }
     }
 
     async refreshDevices() {
+        const btn = document.getElementById('refresh-devices');
+        this.setButtonLoading(btn, true, 'Refreshing...');
+
         try {
             this.devices = await ipcRenderer.invoke('get-devices');
             const devicePositions = await ipcRenderer.invoke('get-device-positions');
@@ -247,6 +278,8 @@ class WiFiTriangulationApp {
             this.drawFloorPlan();
         } catch (error) {
             console.error('Device refresh failed:', error);
+        } finally {
+            this.setButtonLoading(btn, false);
         }
     }
 

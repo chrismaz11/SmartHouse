@@ -14,8 +14,20 @@ class WiFiTriangulationApp {
         this.zoom = 1;
         this.panX = 0;
         this.panY = 0;
+        this.lastRenderedHtml = {};
         
         this.init();
+    }
+
+    // ⚡ Bolt: Helper to prevent unnecessary DOM updates
+    updateContainerIfChanged(containerId, newHtml) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        if (this.lastRenderedHtml[containerId] !== newHtml) {
+            container.innerHTML = newHtml;
+            this.lastRenderedHtml[containerId] = newHtml;
+        }
     }
 
     escapeHtml(unsafe) {
@@ -251,14 +263,14 @@ class WiFiTriangulationApp {
     }
 
     updateNetworkDisplay() {
-        const container = document.getElementById('wifi-networks');
+        const containerId = 'wifi-networks';
         
         if (this.networks.length === 0) {
-            container.innerHTML = '<p class="loading">No networks found</p>';
+            this.updateContainerIfChanged(containerId, '<p class="loading">No networks found</p>');
             return;
         }
 
-        container.innerHTML = this.networks.map(network => `
+        const html = this.networks.map(network => `
             <div class="network-item">
                 <div class="network-info">
                     <div class="network-name">${this.escapeHtml(network.ssid || 'Hidden Network')}</div>
@@ -272,12 +284,14 @@ class WiFiTriangulationApp {
                 </div>
             </div>
         `).join('');
+
+        this.updateContainerIfChanged(containerId, html);
     }
 
     updateAccessPointsDisplay() {
-        const container = document.getElementById('ap-positions');
+        const containerId = 'ap-positions';
         
-        container.innerHTML = this.accessPoints.map(ap => `
+        const html = this.accessPoints.map(ap => `
             <div class="network-item">
                 <div class="network-info">
                     <div class="network-name">${this.escapeHtml(ap.ssid || 'Access Point')}</div>
@@ -290,17 +304,19 @@ class WiFiTriangulationApp {
                 </div>
             </div>
         `).join('');
+
+        this.updateContainerIfChanged(containerId, html);
     }
 
     updateDeviceDisplay() {
-        const container = document.getElementById('tracked-devices');
+        const containerId = 'tracked-devices';
         
         if (this.devices.length === 0) {
-            container.innerHTML = '<p class="loading">No devices detected</p>';
+            this.updateContainerIfChanged(containerId, '<p class="loading">No devices detected</p>');
             return;
         }
 
-        container.innerHTML = this.devices.map(device => `
+        const html = this.devices.map(device => `
             <div class="device-item">
                 <div class="device-info">
                     <div class="device-name">${this.escapeHtml(device.tag || device.mac)}</div>
@@ -313,6 +329,8 @@ class WiFiTriangulationApp {
                 </div>
             </div>
         `).join('');
+
+        this.updateContainerIfChanged(containerId, html);
 
         this.updateDeviceTagging();
     }

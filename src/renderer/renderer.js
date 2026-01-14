@@ -14,6 +14,7 @@ class WiFiTriangulationApp {
         this.zoom = 1;
         this.panX = 0;
         this.panY = 0;
+        this.lastRenderedHtml = new Map();
         
         this.init();
     }
@@ -250,34 +251,45 @@ class WiFiTriangulationApp {
         }
     }
 
-    updateNetworkDisplay() {
-        const container = document.getElementById('wifi-networks');
-        
-        if (this.networks.length === 0) {
-            container.innerHTML = '<p class="loading">No networks found</p>';
-            return;
+    // ⚡ Bolt: Helper to avoid redundant DOM updates and layout thrashing
+    updateContainerIfChanged(containerId, newHtml) {
+        if (this.lastRenderedHtml.get(containerId) === newHtml) {
+            return false;
         }
+        const container = document.getElementById(containerId);
+        if (container) {
+            container.innerHTML = newHtml;
+            this.lastRenderedHtml.set(containerId, newHtml);
+            return true;
+        }
+        return false;
+    }
 
-        container.innerHTML = this.networks.map(network => `
-            <div class="network-item">
-                <div class="network-info">
-                    <div class="network-name">${this.escapeHtml(network.ssid || 'Hidden Network')}</div>
-                    <div class="network-details">
-                        ${this.escapeHtml(network.bssid)} • ${network.frequency}MHz
+    updateNetworkDisplay() {
+        let html;
+        if (this.networks.length === 0) {
+            html = '<p class="loading">No networks found</p>';
+        } else {
+            html = this.networks.map(network => `
+                <div class="network-item">
+                    <div class="network-info">
+                        <div class="network-name">${this.escapeHtml(network.ssid || 'Hidden Network')}</div>
+                        <div class="network-details">
+                            ${this.escapeHtml(network.bssid)} • ${network.frequency}MHz
+                        </div>
+                    </div>
+                    <div class="signal-strength">
+                        <span>${network.signal_level}dBm</span>
+                        ${this.renderSignalBars(network.signal_level)}
                     </div>
                 </div>
-                <div class="signal-strength">
-                    <span>${network.signal_level}dBm</span>
-                    ${this.renderSignalBars(network.signal_level)}
-                </div>
-            </div>
-        `).join('');
+            `).join('');
+        }
+        this.updateContainerIfChanged('wifi-networks', html);
     }
 
     updateAccessPointsDisplay() {
-        const container = document.getElementById('ap-positions');
-        
-        container.innerHTML = this.accessPoints.map(ap => `
+        const html = this.accessPoints.map(ap => `
             <div class="network-item">
                 <div class="network-info">
                     <div class="network-name">${this.escapeHtml(ap.ssid || 'Access Point')}</div>
@@ -290,37 +302,36 @@ class WiFiTriangulationApp {
                 </div>
             </div>
         `).join('');
+        this.updateContainerIfChanged('ap-positions', html);
     }
 
     updateDeviceDisplay() {
-        const container = document.getElementById('tracked-devices');
-        
+        let html;
         if (this.devices.length === 0) {
-            container.innerHTML = '<p class="loading">No devices detected</p>';
-            return;
-        }
-
-        container.innerHTML = this.devices.map(device => `
-            <div class="device-item">
-                <div class="device-info">
-                    <div class="device-name">${this.escapeHtml(device.tag || device.mac)}</div>
-                    <div class="device-details">
-                        ${this.escapeHtml(device.mac)} • Last seen: ${new Date(device.lastSeen).toLocaleTimeString()}
+            html = '<p class="loading">No devices detected</p>';
+        } else {
+            html = this.devices.map(device => `
+                <div class="device-item">
+                    <div class="device-info">
+                        <div class="device-name">${this.escapeHtml(device.tag || device.mac)}</div>
+                        <div class="device-details">
+                            ${this.escapeHtml(device.mac)} • Last seen: ${new Date(device.lastSeen).toLocaleTimeString()}
+                        </div>
+                    </div>
+                    <div class="signal-strength">
+                        <span>RSSI: ${device.rssi?.join(', ') || 'N/A'}</span>
                     </div>
                 </div>
-                <div class="signal-strength">
-                    <span>RSSI: ${device.rssi?.join(', ') || 'N/A'}</span>
-                </div>
-            </div>
-        `).join('');
+            `).join('');
+        }
 
-        this.updateDeviceTagging();
+        if (this.updateContainerIfChanged('tracked-devices', html)) {
+            this.updateDeviceTagging();
+        }
     }
 
     updateDeviceTagging() {
-        const container = document.getElementById('device-tags');
-        
-        container.innerHTML = this.devices.map(device => `
+        const html = this.devices.map(device => `
             <div style="margin-bottom: 12px;">
                 <label style="display: block; margin-bottom: 4px;">${this.escapeHtml(device.mac)}:</label>
                 <input type="text" 
@@ -331,18 +342,21 @@ class WiFiTriangulationApp {
             </div>
         `).join('');
 
-        // Add event listeners for tag inputs
-        container.querySelectorAll('input').forEach(input => {
-            input.addEventListener('blur', async () => {
-                const tags = {};
-                container.querySelectorAll('input').forEach(inp => {
-                    if (inp.value.trim()) {
-                        tags[inp.dataset.mac] = inp.value.trim();
-                    }
+        if (this.updateContainerIfChanged('device-tags', html)) {
+            // Re-attach event listeners only if DOM updated
+            const container = document.getElementById('device-tags');
+            container.querySelectorAll('input').forEach(input => {
+                input.addEventListener('blur', async () => {
+                    const tags = {};
+                    container.querySelectorAll('input').forEach(inp => {
+                        if (inp.value.trim()) {
+                            tags[inp.dataset.mac] = inp.value.trim();
+                        }
+                    });
+                    await ipcRenderer.invoke('save-device-tags', tags);
                 });
-                await ipcRenderer.invoke('save-device-tags', tags);
             });
-        });
+        }
     }
 
     renderSignalBars(signalLevel) {

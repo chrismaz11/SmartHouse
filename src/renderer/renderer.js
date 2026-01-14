@@ -218,8 +218,28 @@ class WiFiTriangulationApp {
         await this.loadSettings();
     }
 
+    setButtonLoading(btnId, isLoading, loadingText = '') {
+        const btn = document.getElementById(btnId);
+        if (!btn) return;
+
+        if (isLoading) {
+            if (!btn.dataset.originalText) {
+                btn.dataset.originalText = btn.innerHTML;
+            }
+            btn.disabled = true;
+            btn.innerHTML = `<div style="display: flex; align-items: center; justify-content: center; gap: 8px;"><div class="spinner"></div> ${loadingText}</div>`;
+        } else {
+            btn.disabled = false;
+            if (btn.dataset.originalText) {
+                btn.innerHTML = btn.dataset.originalText;
+                delete btn.dataset.originalText;
+            }
+        }
+    }
+
     async scanNetworks() {
         this.updateStatus('Scanning networks...', 'connecting');
+        this.setButtonLoading('scan-btn', true, 'Scanning...');
         
         try {
             this.networks = await ipcRenderer.invoke('scan-wifi');
@@ -233,10 +253,13 @@ class WiFiTriangulationApp {
         } catch (error) {
             console.error('Network scan failed:', error);
             this.updateStatus('Scan failed', 'error');
+        } finally {
+            this.setButtonLoading('scan-btn', false);
         }
     }
 
     async refreshDevices() {
+        this.setButtonLoading('refresh-devices', true, 'Refreshing...');
         try {
             this.devices = await ipcRenderer.invoke('get-devices');
             const devicePositions = await ipcRenderer.invoke('get-device-positions');
@@ -247,6 +270,8 @@ class WiFiTriangulationApp {
             this.drawFloorPlan();
         } catch (error) {
             console.error('Device refresh failed:', error);
+        } finally {
+            this.setButtonLoading('refresh-devices', false);
         }
     }
 

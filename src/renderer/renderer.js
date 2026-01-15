@@ -29,6 +29,23 @@ class WiFiTriangulationApp {
             .replace(/'/g, "&#039;");
     }
 
+    setButtonLoading(btn, isLoading, loadingText = 'Loading...') {
+        if (!btn) return;
+
+        if (isLoading) {
+            btn.dataset.originalText = btn.innerText;
+            btn.disabled = true;
+            // Use inline styles for spinner to ensure contrast on primary buttons
+            const spinner = '<div class="spinner" style="width: 14px; height: 14px; border-color: rgba(255,255,255,0.3); border-top-color: #fff; display: inline-block; vertical-align: middle; margin-right: 8px;"></div>';
+            btn.innerHTML = `${spinner}${loadingText}`;
+        } else {
+            btn.disabled = false;
+            if (btn.dataset.originalText) {
+                btn.innerText = btn.dataset.originalText;
+            }
+        }
+    }
+
     async init() {
         this.setupEventListeners();
         this.setupCanvas();
@@ -49,8 +66,11 @@ class WiFiTriangulationApp {
         });
 
         // Network scanning
-        document.getElementById('scan-btn').addEventListener('click', () => {
-            this.scanNetworks();
+        document.getElementById('scan-btn').addEventListener('click', async (e) => {
+            const btn = e.currentTarget;
+            this.setButtonLoading(btn, true, 'Scanning...');
+            await this.scanNetworks();
+            this.setButtonLoading(btn, false);
         });
 
         // Manual network entry
@@ -71,8 +91,11 @@ class WiFiTriangulationApp {
         });
 
         // Device refresh
-        document.getElementById('refresh-devices').addEventListener('click', () => {
-            this.refreshDevices();
+        document.getElementById('refresh-devices').addEventListener('click', async (e) => {
+            const btn = e.currentTarget;
+            this.setButtonLoading(btn, true, 'Refreshing...');
+            await this.refreshDevices();
+            this.setButtonLoading(btn, false);
         });
 
         // Floor plan controls
@@ -135,13 +158,19 @@ class WiFiTriangulationApp {
         });
 
         // Settings
-        document.getElementById('save-settings').addEventListener('click', () => {
-            this.saveSettings();
+        document.getElementById('save-settings').addEventListener('click', async (e) => {
+            const btn = e.currentTarget;
+            this.setButtonLoading(btn, true, 'Saving...');
+            await this.saveSettings();
+            this.setButtonLoading(btn, false);
         });
 
         // Intelligent Setup
-        document.getElementById('start-intelligent-setup').addEventListener('click', () => {
-            this.startIntelligentSetup();
+        document.getElementById('start-intelligent-setup').addEventListener('click', async (e) => {
+            const btn = e.currentTarget;
+            this.setButtonLoading(btn, true, 'Starting...');
+            await this.startIntelligentSetup();
+            this.setButtonLoading(btn, false);
         });
 
         document.getElementById('cancel-setup').addEventListener('click', () => {

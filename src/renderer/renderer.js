@@ -29,6 +29,17 @@ class WiFiTriangulationApp {
             .replace(/'/g, "&#039;");
     }
 
+    setButtonLoading(btn, isLoading) {
+        if (isLoading) {
+            btn.dataset.originalHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = `<span class="spinner light" style="display:inline-block; vertical-align:middle; margin-right:8px;"></span>${btn.innerHTML}`;
+        } else {
+            btn.disabled = false;
+            btn.innerHTML = btn.dataset.originalHtml || btn.innerHTML;
+        }
+    }
+
     async init() {
         this.setupEventListeners();
         this.setupCanvas();
@@ -49,8 +60,14 @@ class WiFiTriangulationApp {
         });
 
         // Network scanning
-        document.getElementById('scan-btn').addEventListener('click', () => {
-            this.scanNetworks();
+        document.getElementById('scan-btn').addEventListener('click', async (e) => {
+            const btn = e.currentTarget;
+            this.setButtonLoading(btn, true);
+            try {
+                await this.scanNetworks();
+            } finally {
+                this.setButtonLoading(btn, false);
+            }
         });
 
         // Manual network entry
@@ -71,8 +88,14 @@ class WiFiTriangulationApp {
         });
 
         // Device refresh
-        document.getElementById('refresh-devices').addEventListener('click', () => {
-            this.refreshDevices();
+        document.getElementById('refresh-devices').addEventListener('click', async (e) => {
+            const btn = e.currentTarget;
+            this.setButtonLoading(btn, true);
+            try {
+                await this.refreshDevices();
+            } finally {
+                this.setButtonLoading(btn, false);
+            }
         });
 
         // Floor plan controls
@@ -135,8 +158,14 @@ class WiFiTriangulationApp {
         });
 
         // Settings
-        document.getElementById('save-settings').addEventListener('click', () => {
-            this.saveSettings();
+        document.getElementById('save-settings').addEventListener('click', async (e) => {
+            const btn = e.currentTarget;
+            this.setButtonLoading(btn, true);
+            try {
+                await this.saveSettings();
+            } finally {
+                this.setButtonLoading(btn, false);
+            }
         });
 
         // Intelligent Setup

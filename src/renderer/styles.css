@@ -439,6 +439,11 @@ body {
     animation: spin 1s linear infinite;
 }
 
+.spinner.light {
+    border-color: rgba(255, 255, 255, 0.3);
+    border-top-color: #ffffff;
+}
+
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }

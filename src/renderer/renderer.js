@@ -29,6 +29,45 @@ class WiFiTriangulationApp {
             .replace(/'/g, "&#039;");
     }
 
+    setButtonLoading(button, isLoading, loadingText = 'Loading...') {
+        if (!button) return;
+
+        if (isLoading) {
+            button.dataset.originalText = button.innerHTML;
+            button.disabled = true;
+
+            // Check if it's a primary button to adjust spinner color
+            const isPrimary = button.classList.contains('btn-primary');
+            const spinnerStyle = isPrimary
+                ? 'border-color: rgba(255,255,255,0.3); border-top-color: #ffffff;'
+                : '';
+
+            button.innerHTML = `
+                <div class="spinner" style="${spinnerStyle}"></div>
+                <span>${loadingText}</span>
+            `;
+
+            if (!isPrimary) {
+                button.classList.add('loading');
+            } else {
+                 button.style.display = 'flex';
+                 button.style.alignItems = 'center';
+                 button.style.justifyContent = 'center';
+                 button.style.gap = '8px';
+            }
+        } else {
+            button.disabled = false;
+            button.innerHTML = button.dataset.originalText || button.innerHTML;
+            button.classList.remove('loading');
+
+            // Clean up inline styles
+            button.style.display = '';
+            button.style.alignItems = '';
+            button.style.justifyContent = '';
+            button.style.gap = '';
+        }
+    }
+
     async init() {
         this.setupEventListeners();
         this.setupCanvas();
@@ -49,8 +88,8 @@ class WiFiTriangulationApp {
         });
 
         // Network scanning
-        document.getElementById('scan-btn').addEventListener('click', () => {
-            this.scanNetworks();
+        document.getElementById('scan-btn').addEventListener('click', (e) => {
+            this.scanNetworks(e.currentTarget);
         });
 
         // Manual network entry
@@ -71,8 +110,8 @@ class WiFiTriangulationApp {
         });
 
         // Device refresh
-        document.getElementById('refresh-devices').addEventListener('click', () => {
-            this.refreshDevices();
+        document.getElementById('refresh-devices').addEventListener('click', (e) => {
+            this.refreshDevices(e.currentTarget);
         });
 
         // Floor plan controls
@@ -218,8 +257,9 @@ class WiFiTriangulationApp {
         await this.loadSettings();
     }
 
-    async scanNetworks() {
+    async scanNetworks(triggerButton = null) {
         this.updateStatus('Scanning networks...', 'connecting');
+        this.setButtonLoading(triggerButton, true, 'Scanning...');
         
         try {
             this.networks = await ipcRenderer.invoke('scan-wifi');
@@ -233,10 +273,13 @@ class WiFiTriangulationApp {
         } catch (error) {
             console.error('Network scan failed:', error);
             this.updateStatus('Scan failed', 'error');
+        } finally {
+            this.setButtonLoading(triggerButton, false);
         }
     }
 
-    async refreshDevices() {
+    async refreshDevices(triggerButton = null) {
+        this.setButtonLoading(triggerButton, true, 'Refreshing...');
         try {
             this.devices = await ipcRenderer.invoke('get-devices');
             const devicePositions = await ipcRenderer.invoke('get-device-positions');
@@ -247,6 +290,8 @@ class WiFiTriangulationApp {
             this.drawFloorPlan();
         } catch (error) {
             console.error('Device refresh failed:', error);
+        } finally {
+            this.setButtonLoading(triggerButton, false);
         }
     }
 
@@ -528,6 +573,9 @@ class WiFiTriangulationApp {
     }
 
     async saveSettings() {
+        const button = document.getElementById('save-settings');
+        this.setButtonLoading(button, true, 'Saving...');
+
         const settings = {
             geminiApiKey: document.getElementById('gemini-api-key').value,
             pathLoss: parseFloat(document.getElementById('path-loss').value),
@@ -551,6 +599,8 @@ class WiFiTriangulationApp {
         } catch (error) {
             console.error('Failed to save settings:', error);
             this.showNotification('Failed to save settings!', 'error');
+        } finally {
+            this.setButtonLoading(button, false);
         }
     }
 

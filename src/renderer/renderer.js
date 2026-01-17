@@ -15,7 +15,23 @@ class WiFiTriangulationApp {
         this.panX = 0;
         this.panY = 0;
         
+        // ⚡ Bolt: Cache for last rendered HTML to prevent redundant DOM updates
+        this.lastRenderedHtml = {};
+
         this.init();
+    }
+
+    // ⚡ Bolt: Performance optimization helper
+    updateContainerIfChanged(containerId, newHtml) {
+        const container = document.getElementById(containerId);
+        if (!container) return false;
+
+        if (this.lastRenderedHtml[containerId] !== newHtml) {
+            container.innerHTML = newHtml;
+            this.lastRenderedHtml[containerId] = newHtml;
+            return true;
+        }
+        return false;
     }
 
     escapeHtml(unsafe) {
@@ -251,14 +267,12 @@ class WiFiTriangulationApp {
     }
 
     updateNetworkDisplay() {
-        const container = document.getElementById('wifi-networks');
+        let html;
         
         if (this.networks.length === 0) {
-            container.innerHTML = '<p class="loading">No networks found</p>';
-            return;
-        }
-
-        container.innerHTML = this.networks.map(network => `
+            html = '<p class="loading">No networks found</p>';
+        } else {
+            html = this.networks.map(network => `
             <div class="network-item">
                 <div class="network-info">
                     <div class="network-name">${this.escapeHtml(network.ssid || 'Hidden Network')}</div>
@@ -272,12 +286,13 @@ class WiFiTriangulationApp {
                 </div>
             </div>
         `).join('');
+        }
+
+        this.updateContainerIfChanged('wifi-networks', html);
     }
 
     updateAccessPointsDisplay() {
-        const container = document.getElementById('ap-positions');
-        
-        container.innerHTML = this.accessPoints.map(ap => `
+        const html = this.accessPoints.map(ap => `
             <div class="network-item">
                 <div class="network-info">
                     <div class="network-name">${this.escapeHtml(ap.ssid || 'Access Point')}</div>
@@ -290,17 +305,17 @@ class WiFiTriangulationApp {
                 </div>
             </div>
         `).join('');
+
+        this.updateContainerIfChanged('ap-positions', html);
     }
 
     updateDeviceDisplay() {
-        const container = document.getElementById('tracked-devices');
+        let html;
         
         if (this.devices.length === 0) {
-            container.innerHTML = '<p class="loading">No devices detected</p>';
-            return;
-        }
-
-        container.innerHTML = this.devices.map(device => `
+            html = '<p class="loading">No devices detected</p>';
+        } else {
+            html = this.devices.map(device => `
             <div class="device-item">
                 <div class="device-info">
                     <div class="device-name">${this.escapeHtml(device.tag || device.mac)}</div>
@@ -313,14 +328,14 @@ class WiFiTriangulationApp {
                 </div>
             </div>
         `).join('');
+        }
 
+        this.updateContainerIfChanged('tracked-devices', html);
         this.updateDeviceTagging();
     }
 
     updateDeviceTagging() {
-        const container = document.getElementById('device-tags');
-        
-        container.innerHTML = this.devices.map(device => `
+        const html = this.devices.map(device => `
             <div style="margin-bottom: 12px;">
                 <label style="display: block; margin-bottom: 4px;">${this.escapeHtml(device.mac)}:</label>
                 <input type="text" 
@@ -331,18 +346,22 @@ class WiFiTriangulationApp {
             </div>
         `).join('');
 
-        // Add event listeners for tag inputs
-        container.querySelectorAll('input').forEach(input => {
-            input.addEventListener('blur', async () => {
-                const tags = {};
-                container.querySelectorAll('input').forEach(inp => {
-                    if (inp.value.trim()) {
-                        tags[inp.dataset.mac] = inp.value.trim();
-                    }
+        // Only attach listeners if the container was actually updated
+        if (this.updateContainerIfChanged('device-tags', html)) {
+            const container = document.getElementById('device-tags');
+            // Add event listeners for tag inputs
+            container.querySelectorAll('input').forEach(input => {
+                input.addEventListener('blur', async () => {
+                    const tags = {};
+                    container.querySelectorAll('input').forEach(inp => {
+                        if (inp.value.trim()) {
+                            tags[inp.dataset.mac] = inp.value.trim();
+                        }
+                    });
+                    await ipcRenderer.invoke('save-device-tags', tags);
                 });
-                await ipcRenderer.invoke('save-device-tags', tags);
             });
-        });
+        }
     }
 
     renderSignalBars(signalLevel) {
@@ -448,14 +467,12 @@ class WiFiTriangulationApp {
     }
 
     updateAutomationDisplay() {
-        const container = document.getElementById('automation-rules');
+        let html;
         
         if (this.automations.length === 0) {
-            container.innerHTML = '<p class="loading">No automation rules configured</p>';
-            return;
-        }
-
-        container.innerHTML = this.automations.map(automation => `
+            html = '<p class="loading">No automation rules configured</p>';
+        } else {
+            html = this.automations.map(automation => `
             <div class="automation-item">
                 <div class="device-info">
                     <div class="device-name">${this.escapeHtml(automation.name)}</div>
@@ -466,6 +483,9 @@ class WiFiTriangulationApp {
                 <button class="btn-secondary delete-automation-btn" data-id="${this.escapeHtml(automation.id)}">Delete</button>
             </div>
         `).join('');
+        }
+
+        this.updateContainerIfChanged('automation-rules', html);
     }
 
     showAutomationModal() {
@@ -573,20 +593,19 @@ class WiFiTriangulationApp {
 
     updateDashboard() {
         // Network status
-        const networkStatus = document.getElementById('network-status');
-        networkStatus.innerHTML = `
+        const networkStatusHtml = `
             <p>${this.networks.length} networks detected</p>
             <p style="font-size: 12px; color: #94a3b8; margin-top: 4px;">
                 Last scan: ${new Date().toLocaleTimeString()}
             </p>
         `;
+        this.updateContainerIfChanged('network-status', networkStatusHtml);
 
         // Device count
         document.querySelector('#device-count .count').textContent = this.devices.length;
 
         // Access points
-        const apStatus = document.getElementById('ap-status');
-        apStatus.innerHTML = `
+        const apStatusHtml = `
             <p>${this.accessPoints.length} access points configured</p>
             ${this.accessPoints.map(ap => `
                 <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;">
@@ -594,15 +613,16 @@ class WiFiTriangulationApp {
                 </div>
             `).join('')}
         `;
+        this.updateContainerIfChanged('ap-status', apStatusHtml);
 
         // Automation status
-        const automationStatus = document.getElementById('automation-status');
-        automationStatus.innerHTML = `
+        const automationStatusHtml = `
             <p>${this.automations.length} rules active</p>
             <p style="font-size: 12px; color: #94a3b8; margin-top: 4px;">
                 Gemini AI ${this.geminiEnabled ? 'enabled' : 'disabled'}
             </p>
         `;
+        this.updateContainerIfChanged('automation-status', automationStatusHtml);
     }
 
     updateDevicePositions(devicePositions) {

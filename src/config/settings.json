@@ -1,9 +1,0 @@
-{
-  "pathLoss": 2,
-  "refPower": -59,
-  "homebridgeIp": "10.0.0.228",
-  "homebridgePort": 8581,
-  "homebridgeUsername": "SynologyBridge",
-  "homebridgePassword": "inSomnia11!",
-  "homebridgePin": "987-83-784"
-}

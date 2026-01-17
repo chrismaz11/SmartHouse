@@ -1,0 +1,10 @@
+{
+  "pathLoss": 2,
+  "refPower": -59,
+  "homebridgeIp": "127.0.0.1",
+  "homebridgePort": 8581,
+  "homebridgeUsername": "admin",
+  "homebridgePassword": "CHANGE_ME",
+  "homebridgePin": "000-00-000",
+  "geminiApiKey": "CHANGE_ME"
+}

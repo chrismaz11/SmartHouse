@@ -29,6 +29,28 @@ class WiFiTriangulationApp {
             .replace(/'/g, "&#039;");
     }
 
+    setButtonLoading(btn, isLoading) {
+        if (!btn) return;
+
+        if (isLoading) {
+            btn.dataset.originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.setAttribute('aria-busy', 'true');
+            // Adjust spinner colors for contrast
+            const isPrimary = btn.classList.contains('btn-primary');
+            const borderColor = isPrimary ? 'rgba(255,255,255,0.3)' : '#334155';
+            const topColor = isPrimary ? '#ffffff' : '#3b82f6';
+
+            btn.innerHTML = `<div class="spinner" style="border-color: ${borderColor}; border-top-color: ${topColor}; margin: 0 auto;"></div>`;
+        } else {
+            if (btn.dataset.originalText) {
+                btn.innerHTML = btn.dataset.originalText;
+            }
+            btn.disabled = false;
+            btn.removeAttribute('aria-busy');
+        }
+    }
+
     async init() {
         this.setupEventListeners();
         this.setupCanvas();
@@ -49,8 +71,8 @@ class WiFiTriangulationApp {
         });
 
         // Network scanning
-        document.getElementById('scan-btn').addEventListener('click', () => {
-            this.scanNetworks();
+        document.getElementById('scan-btn').addEventListener('click', (e) => {
+            this.scanNetworks(e.currentTarget);
         });
 
         // Manual network entry
@@ -71,8 +93,8 @@ class WiFiTriangulationApp {
         });
 
         // Device refresh
-        document.getElementById('refresh-devices').addEventListener('click', () => {
-            this.refreshDevices();
+        document.getElementById('refresh-devices').addEventListener('click', (e) => {
+            this.refreshDevices(e.currentTarget);
         });
 
         // Floor plan controls
@@ -135,13 +157,13 @@ class WiFiTriangulationApp {
         });
 
         // Settings
-        document.getElementById('save-settings').addEventListener('click', () => {
-            this.saveSettings();
+        document.getElementById('save-settings').addEventListener('click', (e) => {
+            this.saveSettings(e.currentTarget);
         });
 
         // Intelligent Setup
-        document.getElementById('start-intelligent-setup').addEventListener('click', () => {
-            this.startIntelligentSetup();
+        document.getElementById('start-intelligent-setup').addEventListener('click', (e) => {
+            this.startIntelligentSetup(e.currentTarget);
         });
 
         document.getElementById('cancel-setup').addEventListener('click', () => {
@@ -218,7 +240,8 @@ class WiFiTriangulationApp {
         await this.loadSettings();
     }
 
-    async scanNetworks() {
+    async scanNetworks(btn = null) {
+        this.setButtonLoading(btn, true);
         this.updateStatus('Scanning networks...', 'connecting');
         
         try {
@@ -233,10 +256,13 @@ class WiFiTriangulationApp {
         } catch (error) {
             console.error('Network scan failed:', error);
             this.updateStatus('Scan failed', 'error');
+        } finally {
+            this.setButtonLoading(btn, false);
         }
     }
 
-    async refreshDevices() {
+    async refreshDevices(btn = null) {
+        this.setButtonLoading(btn, true);
         try {
             this.devices = await ipcRenderer.invoke('get-devices');
             const devicePositions = await ipcRenderer.invoke('get-device-positions');
@@ -247,6 +273,8 @@ class WiFiTriangulationApp {
             this.drawFloorPlan();
         } catch (error) {
             console.error('Device refresh failed:', error);
+        } finally {
+            this.setButtonLoading(btn, false);
         }
     }
 
@@ -527,7 +555,8 @@ class WiFiTriangulationApp {
         }
     }
 
-    async saveSettings() {
+    async saveSettings(btn = null) {
+        this.setButtonLoading(btn, true);
         const settings = {
             geminiApiKey: document.getElementById('gemini-api-key').value,
             pathLoss: parseFloat(document.getElementById('path-loss').value),
@@ -551,6 +580,8 @@ class WiFiTriangulationApp {
         } catch (error) {
             console.error('Failed to save settings:', error);
             this.showNotification('Failed to save settings!', 'error');
+        } finally {
+            this.setButtonLoading(btn, false);
         }
     }
 
@@ -667,7 +698,8 @@ class WiFiTriangulationApp {
     }
 
     // Intelligent Setup Methods
-    async startIntelligentSetup() {
+    async startIntelligentSetup(btn = null) {
+        this.setButtonLoading(btn, true);
         try {
             const response = await ipcRenderer.invoke('start-intelligent-setup');
             if (response) {
@@ -678,6 +710,8 @@ class WiFiTriangulationApp {
         } catch (error) {
             console.error('Failed to start intelligent setup:', error);
             this.showNotification('Failed to start intelligent setup!', 'error');
+        } finally {
+            this.setButtonLoading(btn, false);
         }
     }
 

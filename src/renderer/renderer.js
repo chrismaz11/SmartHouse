@@ -1,5 +1,15 @@
 const { ipcRenderer } = require('electron');
 
+// ⚡ Bolt: Pre-compiled regex for performance
+const htmlEscapes = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#039;'
+};
+const escapeHtmlRegex = /[&<>"']/g;
+
 class WiFiTriangulationApp {
     constructor() {
         this.networks = [];
@@ -20,13 +30,7 @@ class WiFiTriangulationApp {
 
     escapeHtml(unsafe) {
         if (unsafe === null || unsafe === undefined) return '';
-        const str = String(unsafe);
-        return str
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#039;");
+        return String(unsafe).replace(escapeHtmlRegex, match => htmlEscapes[match]);
     }
 
     async init() {

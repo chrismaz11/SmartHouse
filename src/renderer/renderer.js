@@ -212,10 +212,15 @@ class WiFiTriangulationApp {
     }
 
     async loadInitialData() {
-        await this.scanNetworks();
-        await this.refreshDevices();
-        await this.loadAutomations();
-        await this.loadSettings();
+        // ⚡ Bolt: Parallelize data loading to reduce startup time
+        await Promise.all([
+            this.scanNetworks(),
+            this.refreshDevices(),
+            this.loadAutomations(),
+            this.loadSettings()
+        ]);
+        // Ensure consistent initial state
+        this.drawFloorPlan();
     }
 
     async scanNetworks() {
@@ -572,37 +577,54 @@ class WiFiTriangulationApp {
     }
 
     updateDashboard() {
+        // ⚡ Bolt: Debounce dashboard updates to prevent redundant DOM operations
+        if (this._dashboardUpdateTimeout) clearTimeout(this._dashboardUpdateTimeout);
+        this._dashboardUpdateTimeout = setTimeout(() => {
+            this._performUpdateDashboard();
+        }, 50);
+    }
+
+    _performUpdateDashboard() {
         // Network status
         const networkStatus = document.getElementById('network-status');
-        networkStatus.innerHTML = `
-            <p>${this.networks.length} networks detected</p>
-            <p style="font-size: 12px; color: #94a3b8; margin-top: 4px;">
-                Last scan: ${new Date().toLocaleTimeString()}
-            </p>
-        `;
+        if (networkStatus) {
+            networkStatus.innerHTML = `
+                <p>${this.networks.length} networks detected</p>
+                <p style="font-size: 12px; color: #94a3b8; margin-top: 4px;">
+                    Last scan: ${new Date().toLocaleTimeString()}
+                </p>
+            `;
+        }
 
         // Device count
-        document.querySelector('#device-count .count').textContent = this.devices.length;
+        const deviceCount = document.querySelector('#device-count .count');
+        if (deviceCount) {
+            deviceCount.textContent = this.devices.length;
+        }
 
         // Access points
         const apStatus = document.getElementById('ap-status');
-        apStatus.innerHTML = `
-            <p>${this.accessPoints.length} access points configured</p>
-            ${this.accessPoints.map(ap => `
-                <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;">
-                    ${this.escapeHtml(ap.ssid || 'Unknown')} (${ap.signal_level}dBm)
-                </div>
-            `).join('')}
-        `;
+        if (apStatus) {
+            apStatus.innerHTML = `
+                <p>${this.accessPoints.length} access points configured</p>
+                ${this.accessPoints.map(ap => `
+                    <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;">
+                        ${this.escapeHtml(ap.ssid || 'Unknown')} (${ap.signal_level}dBm)
+                    </div>
+                `).join('')}
+            `;
+        }
 
         // Automation status
         const automationStatus = document.getElementById('automation-status');
-        automationStatus.innerHTML = `
-            <p>${this.automations.length} rules active</p>
-            <p style="font-size: 12px; color: #94a3b8; margin-top: 4px;">
-                Gemini AI ${this.geminiEnabled ? 'enabled' : 'disabled'}
-            </p>
-        `;
+        if (automationStatus) {
+            automationStatus.innerHTML = `
+                <p>${this.automations.length} rules active</p>
+                <p style="font-size: 12px; color: #94a3b8; margin-top: 4px;">
+                    Gemini AI ${this.geminiEnabled ? 'enabled' : 'disabled'}
+                </p>
+            `;
+        }
     }
 
     updateDevicePositions(devicePositions) {
@@ -866,3 +888,7 @@ class WiFiTriangulationApp {
 document.addEventListener('DOMContentLoaded', () => {
     new WiFiTriangulationApp();
 });
+
+if (typeof module !== 'undefined') {
+    module.exports = WiFiTriangulationApp;
+}

@@ -29,6 +29,24 @@ class WiFiTriangulationApp {
             .replace(/'/g, "&#039;");
     }
 
+    setButtonLoading(btn, isLoading, loadingText = 'Loading...') {
+        if (!btn || !btn.tagName || btn.tagName !== 'BUTTON') return;
+
+        if (isLoading) {
+            btn.dataset.originalText = btn.innerHTML;
+            btn.disabled = true;
+            // Use existing .spinner class but override colors for visibility on primary buttons
+            btn.innerHTML = `<div class="spinner" style="display: inline-block; vertical-align: middle; width: 14px; height: 14px; border-width: 2px; border-color: rgba(255,255,255,0.3); border-top-color: #ffffff; margin-right: 8px;"></div>${loadingText}`;
+            btn.setAttribute('aria-busy', 'true');
+        } else {
+            btn.disabled = false;
+            if (btn.dataset.originalText) {
+                btn.innerHTML = btn.dataset.originalText;
+            }
+            btn.removeAttribute('aria-busy');
+        }
+    }
+
     async init() {
         this.setupEventListeners();
         this.setupCanvas();
@@ -49,8 +67,8 @@ class WiFiTriangulationApp {
         });
 
         // Network scanning
-        document.getElementById('scan-btn').addEventListener('click', () => {
-            this.scanNetworks();
+        document.getElementById('scan-btn').addEventListener('click', (e) => {
+            this.scanNetworks(e.currentTarget);
         });
 
         // Manual network entry
@@ -71,8 +89,8 @@ class WiFiTriangulationApp {
         });
 
         // Device refresh
-        document.getElementById('refresh-devices').addEventListener('click', () => {
-            this.refreshDevices();
+        document.getElementById('refresh-devices').addEventListener('click', (e) => {
+            this.refreshDevices(e.currentTarget);
         });
 
         // Floor plan controls
@@ -135,8 +153,8 @@ class WiFiTriangulationApp {
         });
 
         // Settings
-        document.getElementById('save-settings').addEventListener('click', () => {
-            this.saveSettings();
+        document.getElementById('save-settings').addEventListener('click', (e) => {
+            this.saveSettings(e.currentTarget);
         });
 
         // Intelligent Setup
@@ -218,8 +236,9 @@ class WiFiTriangulationApp {
         await this.loadSettings();
     }
 
-    async scanNetworks() {
+    async scanNetworks(btn = null) {
         this.updateStatus('Scanning networks...', 'connecting');
+        this.setButtonLoading(btn, true, 'Scanning...');
         
         try {
             this.networks = await ipcRenderer.invoke('scan-wifi');
@@ -233,10 +252,13 @@ class WiFiTriangulationApp {
         } catch (error) {
             console.error('Network scan failed:', error);
             this.updateStatus('Scan failed', 'error');
+        } finally {
+            this.setButtonLoading(btn, false);
         }
     }
 
-    async refreshDevices() {
+    async refreshDevices(btn = null) {
+        this.setButtonLoading(btn, true, 'Refreshing...');
         try {
             this.devices = await ipcRenderer.invoke('get-devices');
             const devicePositions = await ipcRenderer.invoke('get-device-positions');
@@ -247,6 +269,8 @@ class WiFiTriangulationApp {
             this.drawFloorPlan();
         } catch (error) {
             console.error('Device refresh failed:', error);
+        } finally {
+            this.setButtonLoading(btn, false);
         }
     }
 
@@ -527,7 +551,8 @@ class WiFiTriangulationApp {
         }
     }
 
-    async saveSettings() {
+    async saveSettings(btn = null) {
+        this.setButtonLoading(btn, true, 'Saving...');
         const settings = {
             geminiApiKey: document.getElementById('gemini-api-key').value,
             pathLoss: parseFloat(document.getElementById('path-loss').value),
@@ -551,6 +576,8 @@ class WiFiTriangulationApp {
         } catch (error) {
             console.error('Failed to save settings:', error);
             this.showNotification('Failed to save settings!', 'error');
+        } finally {
+            this.setButtonLoading(btn, false);
         }
     }
 

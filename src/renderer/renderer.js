@@ -40,6 +40,26 @@ class WiFiTriangulationApp {
         this.startPeriodicUpdates();
     }
 
+    setButtonLoading(button, isLoading, loadingText = 'Loading...') {
+        if (!button) return;
+
+        if (isLoading) {
+            button.dataset.originalText = button.innerHTML;
+            button.style.width = `${button.offsetWidth}px`;
+            button.disabled = true;
+            button.setAttribute('aria-busy', 'true');
+            button.innerHTML = `
+                <div class="spinner" style="display: inline-block; width: 12px; height: 12px; border: 2px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: #fff; animation: spin 1s ease-in-out infinite; margin-right: 8px; vertical-align: middle;"></div>
+                ${loadingText}
+            `;
+        } else {
+            button.innerHTML = button.dataset.originalText || button.innerHTML;
+            button.style.width = '';
+            button.disabled = false;
+            button.removeAttribute('aria-busy');
+        }
+    }
+
     setupEventListeners() {
         // Navigation
         document.querySelectorAll('.nav-btn').forEach(btn => {
@@ -219,6 +239,8 @@ class WiFiTriangulationApp {
     }
 
     async scanNetworks() {
+        const btn = document.getElementById('scan-btn');
+        this.setButtonLoading(btn, true, 'Scanning...');
         this.updateStatus('Scanning networks...', 'connecting');
         
         try {
@@ -233,10 +255,14 @@ class WiFiTriangulationApp {
         } catch (error) {
             console.error('Network scan failed:', error);
             this.updateStatus('Scan failed', 'error');
+        } finally {
+            this.setButtonLoading(btn, false);
         }
     }
 
     async refreshDevices() {
+        const btn = document.getElementById('refresh-devices');
+        this.setButtonLoading(btn, true, 'Refreshing...');
         try {
             this.devices = await ipcRenderer.invoke('get-devices');
             const devicePositions = await ipcRenderer.invoke('get-device-positions');
@@ -247,6 +273,8 @@ class WiFiTriangulationApp {
             this.drawFloorPlan();
         } catch (error) {
             console.error('Device refresh failed:', error);
+        } finally {
+            this.setButtonLoading(btn, false);
         }
     }
 
@@ -528,6 +556,9 @@ class WiFiTriangulationApp {
     }
 
     async saveSettings() {
+        const btn = document.getElementById('save-settings');
+        this.setButtonLoading(btn, true, 'Saving...');
+
         const settings = {
             geminiApiKey: document.getElementById('gemini-api-key').value,
             pathLoss: parseFloat(document.getElementById('path-loss').value),
@@ -551,6 +582,8 @@ class WiFiTriangulationApp {
         } catch (error) {
             console.error('Failed to save settings:', error);
             this.showNotification('Failed to save settings!', 'error');
+        } finally {
+            this.setButtonLoading(btn, false);
         }
     }
 
@@ -668,6 +701,9 @@ class WiFiTriangulationApp {
 
     // Intelligent Setup Methods
     async startIntelligentSetup() {
+        const btn = document.getElementById('start-intelligent-setup');
+        this.setButtonLoading(btn, true, 'Starting...');
+
         try {
             const response = await ipcRenderer.invoke('start-intelligent-setup');
             if (response) {
@@ -678,6 +714,8 @@ class WiFiTriangulationApp {
         } catch (error) {
             console.error('Failed to start intelligent setup:', error);
             this.showNotification('Failed to start intelligent setup!', 'error');
+        } finally {
+            this.setButtonLoading(btn, false);
         }
     }
 
@@ -711,11 +749,15 @@ class WiFiTriangulationApp {
     }
 
     async markCurrentLocation() {
+        const btn = document.getElementById('mark-location');
+        this.setButtonLoading(btn, true, 'Marking...');
+
         const deviceType = document.getElementById('device-type-select').value;
         const setupCodes = document.getElementById('setup-codes').value;
         
         if (!deviceType) {
             this.showNotification('Please select a device type!', 'error');
+            this.setButtonLoading(btn, false);
             return;
         }
 
@@ -752,6 +794,8 @@ class WiFiTriangulationApp {
         } catch (error) {
             console.error('Mark location failed:', error);
             this.showNotification('Failed to mark location!', 'error');
+        } finally {
+            this.setButtonLoading(btn, false);
         }
     }
 

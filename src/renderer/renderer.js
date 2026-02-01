@@ -20,13 +20,15 @@ class WiFiTriangulationApp {
 
     escapeHtml(unsafe) {
         if (unsafe === null || unsafe === undefined) return '';
-        const str = String(unsafe);
-        return str
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#039;");
+        return String(unsafe).replace(/[&<>"']/g, m => {
+            switch (m) {
+                case '&': return '&amp;';
+                case '<': return '&lt;';
+                case '>': return '&gt;';
+                case '"': return '&quot;';
+                case "'": return '&#039;';
+            }
+        });
     }
 
     async init() {
@@ -347,13 +349,18 @@ class WiFiTriangulationApp {
 
     renderSignalBars(signalLevel) {
         const strength = Math.max(0, Math.min(4, Math.floor((signalLevel + 100) / 12.5)));
-        let bars = '<div class="signal-bars">';
         
+        // ⚡ Bolt: Cache signal bar HTML strings to avoid repetitive string concatenation
+        if (!this._signalBarsCache) this._signalBarsCache = {};
+        if (this._signalBarsCache[strength]) return this._signalBarsCache[strength];
+
+        let bars = '<div class="signal-bars">';
         for (let i = 0; i < 4; i++) {
             bars += `<div class="signal-bar ${i < strength ? 'active' : ''}"></div>`;
         }
-        
         bars += '</div>';
+
+        this._signalBarsCache[strength] = bars;
         return bars;
     }
 

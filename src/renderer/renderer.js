@@ -1,7 +1,19 @@
 const { ipcRenderer } = require('electron');
 
+// ⚡ Bolt: Debounce utility to prevent layout thrashing
+const debounce = (func, wait) => {
+    let timeout;
+    return function(...args) {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(this, args), wait);
+    };
+};
+
 class WiFiTriangulationApp {
     constructor() {
+        // Debounce expensive DOM updates
+        this.updateDashboard = debounce(this.updateDashboard.bind(this), 150);
+
         this.networks = [];
         this.devices = [];
         this.accessPoints = [];

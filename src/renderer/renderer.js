@@ -40,6 +40,24 @@ class WiFiTriangulationApp {
         this.startPeriodicUpdates();
     }
 
+    setButtonLoading(button, isLoading) {
+        if (!button) return;
+
+        if (isLoading) {
+            button.dataset.originalText = button.innerHTML;
+            button.style.width = `${button.offsetWidth}px`;
+            // 🎨 Palette: Ensure spinner is visible on dark buttons by forcing white color
+            button.innerHTML = '<div class="spinner" style="border-color: rgba(255,255,255,0.3); border-top-color: white;"></div>';
+            button.disabled = true;
+            button.setAttribute('aria-busy', 'true');
+        } else {
+            button.innerHTML = button.dataset.originalText || button.innerHTML;
+            button.style.width = '';
+            button.disabled = false;
+            button.removeAttribute('aria-busy');
+        }
+    }
+
     setupEventListeners() {
         // Navigation
         document.querySelectorAll('.nav-btn').forEach(btn => {
@@ -50,7 +68,7 @@ class WiFiTriangulationApp {
 
         // Network scanning
         document.getElementById('scan-btn').addEventListener('click', () => {
-            this.scanNetworks();
+            this.scanNetworks(true);
         });
 
         // Manual network entry
@@ -72,7 +90,7 @@ class WiFiTriangulationApp {
 
         // Device refresh
         document.getElementById('refresh-devices').addEventListener('click', () => {
-            this.refreshDevices();
+            this.refreshDevices(true);
         });
 
         // Floor plan controls
@@ -130,7 +148,7 @@ class WiFiTriangulationApp {
         // Smart device testing
         document.querySelectorAll('.test-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
-                this.testSmartDevice(e.target.dataset.device);
+                this.testSmartDevice(e.currentTarget.dataset.device, e.currentTarget);
             });
         });
 
@@ -218,7 +236,8 @@ class WiFiTriangulationApp {
         await this.loadSettings();
     }
 
-    async scanNetworks() {
+    async scanNetworks(fromUser = false) {
+        if (fromUser) this.setButtonLoading(document.getElementById('scan-btn'), true);
         this.updateStatus('Scanning networks...', 'connecting');
         
         try {
@@ -233,10 +252,13 @@ class WiFiTriangulationApp {
         } catch (error) {
             console.error('Network scan failed:', error);
             this.updateStatus('Scan failed', 'error');
+        } finally {
+            if (fromUser) this.setButtonLoading(document.getElementById('scan-btn'), false);
         }
     }
 
-    async refreshDevices() {
+    async refreshDevices(fromUser = false) {
+        if (fromUser) this.setButtonLoading(document.getElementById('refresh-devices'), true);
         try {
             this.devices = await ipcRenderer.invoke('get-devices');
             const devicePositions = await ipcRenderer.invoke('get-device-positions');
@@ -247,6 +269,8 @@ class WiFiTriangulationApp {
             this.drawFloorPlan();
         } catch (error) {
             console.error('Device refresh failed:', error);
+        } finally {
+            if (fromUser) this.setButtonLoading(document.getElementById('refresh-devices'), false);
         }
     }
 
@@ -514,7 +538,8 @@ class WiFiTriangulationApp {
         }
     }
 
-    async testSmartDevice(deviceType) {
+    async testSmartDevice(deviceType, btn) {
+        this.setButtonLoading(btn, true);
         try {
             const result = await ipcRenderer.invoke('test-smart-device', deviceType, 'test');
             if (result) {
@@ -524,10 +549,15 @@ class WiFiTriangulationApp {
             }
         } catch (error) {
             this.showNotification(`${deviceType.toUpperCase()} test error!`, 'error');
+        } finally {
+            this.setButtonLoading(btn, false);
         }
     }
 
     async saveSettings() {
+        const btn = document.getElementById('save-settings');
+        this.setButtonLoading(btn, true);
+
         const settings = {
             geminiApiKey: document.getElementById('gemini-api-key').value,
             pathLoss: parseFloat(document.getElementById('path-loss').value),
@@ -551,6 +581,8 @@ class WiFiTriangulationApp {
         } catch (error) {
             console.error('Failed to save settings:', error);
             this.showNotification('Failed to save settings!', 'error');
+        } finally {
+            this.setButtonLoading(btn, false);
         }
     }
 
@@ -637,6 +669,15 @@ class WiFiTriangulationApp {
             z-index: 1001;
             font-size: 14px;
         `;
+
+        if (type === 'error') {
+            notification.setAttribute('role', 'alert');
+            notification.setAttribute('aria-live', 'assertive');
+        } else {
+            notification.setAttribute('role', 'status');
+            notification.setAttribute('aria-live', 'polite');
+        }
+
         notification.textContent = message;
         
         document.body.appendChild(notification);
@@ -668,6 +709,8 @@ class WiFiTriangulationApp {
 
     // Intelligent Setup Methods
     async startIntelligentSetup() {
+        const btn = document.getElementById('start-intelligent-setup');
+        this.setButtonLoading(btn, true);
         try {
             const response = await ipcRenderer.invoke('start-intelligent-setup');
             if (response) {
@@ -678,6 +721,8 @@ class WiFiTriangulationApp {
         } catch (error) {
             console.error('Failed to start intelligent setup:', error);
             this.showNotification('Failed to start intelligent setup!', 'error');
+        } finally {
+            this.setButtonLoading(btn, false);
         }
     }
 
@@ -719,6 +764,9 @@ class WiFiTriangulationApp {
             return;
         }
 
+        const btn = document.getElementById('mark-location');
+        this.setButtonLoading(btn, true);
+
         // Get current position (mock for now - would use actual positioning)
         const position = {
             x: Math.random() * 800,
@@ -752,6 +800,8 @@ class WiFiTriangulationApp {
         } catch (error) {
             console.error('Mark location failed:', error);
             this.showNotification('Failed to mark location!', 'error');
+        } finally {
+            this.setButtonLoading(btn, false);
         }
     }
 

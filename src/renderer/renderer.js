@@ -14,6 +14,7 @@ class WiFiTriangulationApp {
         this.zoom = 1;
         this.panX = 0;
         this.panY = 0;
+        this.signalBarsCache = {};
         
         this.init();
     }
@@ -347,6 +348,12 @@ class WiFiTriangulationApp {
 
     renderSignalBars(signalLevel) {
         const strength = Math.max(0, Math.min(4, Math.floor((signalLevel + 100) / 12.5)));
+
+        // ⚡ Bolt: Memoize signal bars HTML generation
+        if (this.signalBarsCache[strength]) {
+            return this.signalBarsCache[strength];
+        }
+
         let bars = '<div class="signal-bars">';
         
         for (let i = 0; i < 4; i++) {
@@ -354,6 +361,8 @@ class WiFiTriangulationApp {
         }
         
         bars += '</div>';
+
+        this.signalBarsCache[strength] = bars;
         return bars;
     }
 

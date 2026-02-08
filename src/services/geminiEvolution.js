@@ -28,6 +28,13 @@ class GeminiEvolutionEngine {
     }
   }
 
+  safeParseJSON(text) {
+    if (!text) throw new Error('Empty response');
+    // Remove markdown code blocks if present
+    const cleanText = text.replace(/```json\n?|```/g, '').trim();
+    return JSON.parse(cleanText);
+  }
+
   async startIntelligentSetup() {
     if (!this.geminiClient) return false;
 
@@ -54,7 +61,7 @@ class GeminiEvolutionEngine {
 
     try {
       const result = await this.geminiClient.generateContent(setupPrompt);
-      const response = JSON.parse(result.response.text());
+      const response = this.safeParseJSON(result.response.text());
       
       this.currentSetupStep = response.nextStep;
       await this.logEvolution('setup_started', response);
@@ -96,7 +103,7 @@ class GeminiEvolutionEngine {
 
     try {
       const result = await this.geminiClient.generateContent(contextPrompt);
-      const response = JSON.parse(result.response.text());
+      const response = this.safeParseJSON(result.response.text());
       
       // Update context
       this.currentSetupStep = response.nextStep;
@@ -143,7 +150,7 @@ class GeminiEvolutionEngine {
 
     try {
       const result = await this.geminiClient.generateContent(evolutionPrompt);
-      const response = JSON.parse(result.response.text());
+      const response = this.safeParseJSON(result.response.text());
       
       await this.logEvolution('ui_evolution', response);
       return response;
@@ -179,7 +186,7 @@ class GeminiEvolutionEngine {
 
     try {
       const result = await this.geminiClient.generateContent(automationPrompt);
-      const rules = JSON.parse(result.response.text());
+      const rules = this.safeParseJSON(result.response.text());
       
       await this.logEvolution('automation_generation', { rules });
       return rules;
@@ -212,7 +219,7 @@ class GeminiEvolutionEngine {
 
     try {
       const result = await this.geminiClient.generateContent(walkingPrompt);
-      const response = JSON.parse(result.response.text());
+      const response = this.safeParseJSON(result.response.text());
       
       // Add to device queue
       this.deviceSetupQueue.push({
@@ -256,7 +263,7 @@ class GeminiEvolutionEngine {
 
       try {
         const result = await this.geminiClient.generateContent(improvementPrompt);
-        const improvements = JSON.parse(result.response.text());
+        const improvements = this.safeParseJSON(result.response.text());
         
         await this.logEvolution('continuous_improvement', improvements);
         

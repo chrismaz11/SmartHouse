@@ -864,8 +864,13 @@ class WiFiTriangulationApp {
                     <option value="repeater">Repeater</option>
                 </select>
             </label>
-            <button class="btn-secondary" onclick="this.parentElement.remove()" style="margin-top: 8px;">Remove</button>
+            <button class="btn-secondary remove-network-btn" style="margin-top: 8px;">Remove</button>
         `;
+
+        entry.querySelector('.remove-network-btn').addEventListener('click', () => {
+            entry.remove();
+        });
+
         container.appendChild(entry);
     }
 

@@ -1,5 +1,13 @@
 const { ipcRenderer } = require('electron');
 
+const HTML_ESCAPE_MAP = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#039;'
+};
+
 class WiFiTriangulationApp {
     constructor() {
         this.networks = [];
@@ -21,13 +29,8 @@ class WiFiTriangulationApp {
 
     escapeHtml(unsafe) {
         if (unsafe === null || unsafe === undefined) return '';
-        const str = String(unsafe);
-        return str
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#039;");
+        // ⚡ Bolt: Optimized single-pass replacement for performance
+        return String(unsafe).replace(/[&<>"']/g, match => HTML_ESCAPE_MAP[match]);
     }
 
     async init() {

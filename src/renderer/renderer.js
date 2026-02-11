@@ -21,13 +21,15 @@ class WiFiTriangulationApp {
 
     escapeHtml(unsafe) {
         if (unsafe === null || unsafe === undefined) return '';
-        const str = String(unsafe);
-        return str
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#039;");
+        return String(unsafe).replace(/[&<>"']/g, match => {
+            switch(match) {
+                case '&': return '&amp;';
+                case '<': return '&lt;';
+                case '>': return '&gt;';
+                case '"': return '&quot;';
+                case "'": return '&#039;';
+            }
+        });
     }
 
     async init() {
@@ -285,11 +287,16 @@ class WiFiTriangulationApp {
         const container = document.getElementById('wifi-networks');
         
         if (this.networks.length === 0) {
-            container.innerHTML = '<p class="loading">No networks found</p>';
+            const html = '<p class="loading">No networks found</p>';
+            if (this.lastRenderedNetworksHtml !== html) {
+                container.innerHTML = html;
+                this.lastRenderedNetworksHtml = html;
+            }
             return;
         }
 
-        container.innerHTML = this.networks.map(network => `
+        // ⚡ Bolt: Prevent unnecessary DOM updates if content hasn't changed
+        const newHtml = this.networks.map(network => `
             <div class="network-item">
                 <div class="network-info">
                     <div class="network-name">${this.escapeHtml(network.ssid || 'Hidden Network')}</div>
@@ -303,12 +310,18 @@ class WiFiTriangulationApp {
                 </div>
             </div>
         `).join('');
+
+        if (this.lastRenderedNetworksHtml !== newHtml) {
+            container.innerHTML = newHtml;
+            this.lastRenderedNetworksHtml = newHtml;
+        }
     }
 
     updateAccessPointsDisplay() {
         const container = document.getElementById('ap-positions');
         
-        container.innerHTML = this.accessPoints.map(ap => `
+        // ⚡ Bolt: Prevent unnecessary DOM updates
+        const newHtml = this.accessPoints.map(ap => `
             <div class="network-item">
                 <div class="network-info">
                     <div class="network-name">${this.escapeHtml(ap.ssid || 'Access Point')}</div>
@@ -321,17 +334,27 @@ class WiFiTriangulationApp {
                 </div>
             </div>
         `).join('');
+
+        if (this.lastRenderedApHtml !== newHtml) {
+            container.innerHTML = newHtml;
+            this.lastRenderedApHtml = newHtml;
+        }
     }
 
     updateDeviceDisplay() {
         const container = document.getElementById('tracked-devices');
         
         if (this.devices.length === 0) {
-            container.innerHTML = '<p class="loading">No devices detected</p>';
+            const html = '<p class="loading">No devices detected</p>';
+            if (this.lastRenderedDeviceHtml !== html) {
+                container.innerHTML = html;
+                this.lastRenderedDeviceHtml = html;
+            }
             return;
         }
 
-        container.innerHTML = this.devices.map(device => `
+        // ⚡ Bolt: Prevent unnecessary DOM updates
+        const newHtml = this.devices.map(device => `
             <div class="device-item">
                 <div class="device-info">
                     <div class="device-name">${this.escapeHtml(device.tag || device.mac)}</div>
@@ -345,7 +368,11 @@ class WiFiTriangulationApp {
             </div>
         `).join('');
 
-        this.updateDeviceTagging();
+        if (this.lastRenderedDeviceHtml !== newHtml) {
+            container.innerHTML = newHtml;
+            this.lastRenderedDeviceHtml = newHtml;
+            this.updateDeviceTagging();
+        }
     }
 
     updateDeviceTagging() {

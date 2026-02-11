@@ -350,30 +350,73 @@ class WiFiTriangulationApp {
 
     updateDeviceTagging() {
         const container = document.getElementById('device-tags');
+        const activeId = document.activeElement?.id;
         
-        container.innerHTML = this.devices.map(device => `
-            <div style="margin-bottom: 12px;">
-                <label style="display: block; margin-bottom: 4px;">${this.escapeHtml(device.mac)}:</label>
-                <input type="text" 
-                       value="${this.escapeHtml(device.tag || '')}"
-                       placeholder="Enter device name (e.g., John's Phone)"
-                       data-mac="${this.escapeHtml(device.mac)}"
-                       style="width: 100%; padding: 6px; background: #0f172a; border: 1px solid #334155; border-radius: 4px; color: #f1f5f9;">
-            </div>
-        `).join('');
+        // ⚡ Bolt: Optimize list updates by reconciling DOM instead of rebuilding it
+        // This prevents input focus loss and reduces layout thrashing
 
-        // Add event listeners for tag inputs
-        container.querySelectorAll('input').forEach(input => {
-            input.addEventListener('blur', async () => {
-                const tags = {};
-                container.querySelectorAll('input').forEach(inp => {
-                    if (inp.value.trim()) {
-                        tags[inp.dataset.mac] = inp.value.trim();
-                    }
-                });
-                await ipcRenderer.invoke('save-device-tags', tags);
-            });
+        // Map existing elements for reuse
+        const existingElements = new Map();
+        container.querySelectorAll('div[data-mac]').forEach(el => {
+            existingElements.set(el.dataset.mac, el);
         });
+
+        const newElements = document.createDocumentFragment();
+
+        this.devices.forEach(device => {
+            let el = existingElements.get(device.mac);
+            const safeMac = this.escapeHtml(device.mac);
+            const safeTag = this.escapeHtml(device.tag || '');
+
+            if (el) {
+                // Update existing
+                const input = el.querySelector('input');
+                if (input) {
+                    // Update value only if not focused or value is empty/different from server
+                    // We avoid overwriting user input while they type
+                    if (input.id !== activeId && input.value !== safeTag) {
+                        input.value = safeTag;
+                    }
+                }
+                existingElements.delete(device.mac); // Mark as visited
+            } else {
+                // Create new
+                el = document.createElement('div');
+                // Store MAC in dataset for easy finding
+                el.dataset.mac = device.mac;
+                el.style.marginBottom = '12px';
+
+                el.innerHTML = `
+                    <label style="display: block; margin-bottom: 4px;">${safeMac}:</label>
+                    <input type="text"
+                           id="tag-input-${safeMac.replace(/:/g, '')}"
+                           value="${safeTag}"
+                           placeholder="Enter device name (e.g., John's Phone)"
+                           data-mac="${safeMac}"
+                           style="width: 100%; padding: 6px; background: #0f172a; border: 1px solid #334155; border-radius: 4px; color: #f1f5f9;">
+                `;
+
+                // Add event listener for tag saving
+                const input = el.querySelector('input');
+                input.addEventListener('blur', async () => {
+                    const tags = {};
+                    container.querySelectorAll('input').forEach(inp => {
+                        if (inp.value.trim()) {
+                            tags[inp.dataset.mac] = inp.value.trim();
+                        }
+                    });
+                    await ipcRenderer.invoke('save-device-tags', tags);
+                });
+
+                newElements.appendChild(el);
+            }
+        });
+
+        // Remove unused elements
+        existingElements.forEach(el => el.remove());
+
+        // Append new elements
+        container.appendChild(newElements);
     }
 
     renderSignalBars(signalLevel) {

@@ -1,4 +1,4 @@
-const { ipcRenderer } = require('electron');
+
 
 class WiFiTriangulationApp {
     constructor() {
@@ -248,8 +248,8 @@ class WiFiTriangulationApp {
         this.updateStatus('Scanning networks...', 'connecting');
         
         try {
-            this.networks = await ipcRenderer.invoke('scan-wifi');
-            this.accessPoints = await ipcRenderer.invoke('get-access-points');
+            this.networks = await window.electron.invoke('scan-wifi');
+            this.accessPoints = await window.electron.invoke('get-access-points');
             
             this.updateNetworkDisplay();
             this.updateAccessPointsDisplay();
@@ -267,8 +267,8 @@ class WiFiTriangulationApp {
     async refreshDevices(fromUser = false) {
         if (fromUser) this.setButtonLoading('refresh-devices', true);
         try {
-            this.devices = await ipcRenderer.invoke('get-devices');
-            const devicePositions = await ipcRenderer.invoke('get-device-positions');
+            this.devices = await window.electron.invoke('get-devices');
+            const devicePositions = await window.electron.invoke('get-device-positions');
             
             this.updateDeviceDisplay();
             this.updateDevicePositions(devicePositions);
@@ -371,7 +371,7 @@ class WiFiTriangulationApp {
                         tags[inp.dataset.mac] = inp.value.trim();
                     }
                 });
-                await ipcRenderer.invoke('save-device-tags', tags);
+                await window.electron.invoke('save-device-tags', tags);
             });
         });
     }
@@ -479,7 +479,7 @@ class WiFiTriangulationApp {
 
     async loadAutomations() {
         try {
-            this.automations = await ipcRenderer.invoke('get-automations');
+            this.automations = await window.electron.invoke('get-automations');
             this.updateAutomationDisplay();
         } catch (error) {
             console.error('Failed to load automations:', error);
@@ -532,7 +532,7 @@ class WiFiTriangulationApp {
             trigger: 'enter'
         };
 
-        await ipcRenderer.invoke('save-automation', automation);
+        await window.electron.invoke('save-automation', automation);
         await this.loadAutomations();
         this.hideAutomationModal();
     }
@@ -545,7 +545,7 @@ class WiFiTriangulationApp {
         try {
             // Note: The backend handler 'delete-automation' needs to be implemented in main.js
             // This is a secure implementation on the renderer side.
-            await ipcRenderer.invoke('delete-automation', id);
+            await window.electron.invoke('delete-automation', id);
             await this.loadAutomations();
         } catch (error) {
             console.error('Failed to delete automation:', error);
@@ -555,7 +555,7 @@ class WiFiTriangulationApp {
 
     async testSmartDevice(deviceType) {
         try {
-            const result = await ipcRenderer.invoke('test-smart-device', deviceType, 'test');
+            const result = await window.electron.invoke('test-smart-device', deviceType, 'test');
             if (result) {
                 this.showNotification(`${deviceType.toUpperCase()} test successful!`);
             } else {
@@ -580,7 +580,7 @@ class WiFiTriangulationApp {
         };
 
         try {
-            await ipcRenderer.invoke('save-settings', settings);
+            await window.electron.invoke('save-settings', settings);
             this.showNotification('Settings saved successfully!');
             
             // Update Gemini status
@@ -598,7 +598,7 @@ class WiFiTriangulationApp {
 
     async loadSettings() {
         try {
-            const settings = await ipcRenderer.invoke('load-settings');
+            const settings = await window.electron.invoke('load-settings');
             
             if (settings.geminiApiKey) document.getElementById('gemini-api-key').value = settings.geminiApiKey;
             if (settings.pathLoss) document.getElementById('path-loss').value = settings.pathLoss;
@@ -703,7 +703,7 @@ class WiFiTriangulationApp {
         // Redraw is now event-driven by refreshDevices() and user interactions.
 
         // Listen for Gemini improvements
-        ipcRenderer.on('gemini-improvements', (event, improvements) => {
+        window.electron.on('gemini-improvements', (improvements) => {
             this.applyGeminiImprovements(improvements);
         });
     }
@@ -712,7 +712,7 @@ class WiFiTriangulationApp {
     async startIntelligentSetup() {
         this.setButtonLoading('start-intelligent-setup', true);
         try {
-            const response = await ipcRenderer.invoke('start-intelligent-setup');
+            const response = await window.electron.invoke('start-intelligent-setup');
             if (response) {
                 this.showIntelligentSetup(response);
             } else {
@@ -742,7 +742,7 @@ class WiFiTriangulationApp {
 
     async continueIntelligentSetup() {
         try {
-            const response = await ipcRenderer.invoke('process-user-action', 'continue', {
+            const response = await window.electron.invoke('process-user-action', 'continue', {
                 currentStep: 'user_continued'
             });
             
@@ -773,7 +773,7 @@ class WiFiTriangulationApp {
         };
 
         try {
-            const response = await ipcRenderer.invoke('walking-setup', position, deviceType, setupCodes);
+            const response = await window.electron.invoke('walking-setup', position, deviceType, setupCodes);
             
             if (response) {
                 this.showNotification(`${deviceType} mapped successfully!`);
@@ -802,7 +802,7 @@ class WiFiTriangulationApp {
 
     async updateSetupProgress() {
         try {
-            const progress = await ipcRenderer.invoke('get-setup-progress');
+            const progress = await window.electron.invoke('get-setup-progress');
             if (progress) {
                 const percentage = progress.totalDevices > 0 ? 
                     (progress.devicesConfigured / progress.totalDevices) * 100 : 0;

@@ -6,6 +6,12 @@ class WiFiTriangulationApp {
         this.devices = [];
         this.accessPoints = [];
         this.automations = [];
+        // ⚡ Bolt: Track last rendered state to prevent unnecessary DOM updates
+        this.lastRenderedNetworks = null;
+        this.lastRenderedAccessPoints = null;
+        this.lastRenderedDevices = null;
+        this.lastRenderedAutomations = null;
+
         this.currentView = 'dashboard';
         this.currentFloor = 1;
         this.canvas = null;
@@ -284,6 +290,11 @@ class WiFiTriangulationApp {
     updateNetworkDisplay() {
         const container = document.getElementById('wifi-networks');
         
+        // ⚡ Bolt: Skip render if data hasn't changed
+        const currentDataHash = JSON.stringify(this.networks);
+        if (this.lastRenderedNetworks === currentDataHash) return;
+        this.lastRenderedNetworks = currentDataHash;
+
         if (this.networks.length === 0) {
             container.innerHTML = '<p class="loading">No networks found</p>';
             return;
@@ -307,6 +318,11 @@ class WiFiTriangulationApp {
 
     updateAccessPointsDisplay() {
         const container = document.getElementById('ap-positions');
+
+        // ⚡ Bolt: Skip render if data hasn't changed
+        const currentDataHash = JSON.stringify(this.accessPoints);
+        if (this.lastRenderedAccessPoints === currentDataHash) return;
+        this.lastRenderedAccessPoints = currentDataHash;
         
         container.innerHTML = this.accessPoints.map(ap => `
             <div class="network-item">
@@ -326,6 +342,11 @@ class WiFiTriangulationApp {
     updateDeviceDisplay() {
         const container = document.getElementById('tracked-devices');
         
+        // ⚡ Bolt: Skip render if data hasn't changed
+        const currentDataHash = JSON.stringify(this.devices);
+        if (this.lastRenderedDevices === currentDataHash) return;
+        this.lastRenderedDevices = currentDataHash;
+
         if (this.devices.length === 0) {
             container.innerHTML = '<p class="loading">No devices detected</p>';
             return;
@@ -489,6 +510,11 @@ class WiFiTriangulationApp {
     updateAutomationDisplay() {
         const container = document.getElementById('automation-rules');
         
+        // ⚡ Bolt: Skip render if data hasn't changed
+        const currentDataHash = JSON.stringify(this.automations);
+        if (this.lastRenderedAutomations === currentDataHash) return;
+        this.lastRenderedAutomations = currentDataHash;
+
         if (this.automations.length === 0) {
             container.innerHTML = '<p class="loading">No automation rules configured</p>';
             return;

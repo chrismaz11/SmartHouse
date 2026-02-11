@@ -267,8 +267,13 @@ class WiFiTriangulationApp {
     async refreshDevices(fromUser = false) {
         if (fromUser) this.setButtonLoading('refresh-devices', true);
         try {
-            this.devices = await ipcRenderer.invoke('get-devices');
-            const devicePositions = await ipcRenderer.invoke('get-device-positions');
+            // ⚡ Bolt: Parallelize independent IPC calls to reduce wait time
+            const [devices, devicePositions] = await Promise.all([
+                ipcRenderer.invoke('get-devices'),
+                ipcRenderer.invoke('get-device-positions')
+            ]);
+
+            this.devices = devices;
             
             this.updateDeviceDisplay();
             this.updateDevicePositions(devicePositions);

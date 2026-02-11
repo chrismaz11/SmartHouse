@@ -213,10 +213,15 @@ class WiFiTriangulationApp {
     }
 
     async loadInitialData() {
-        await this.scanNetworks();
-        await this.refreshDevices();
-        await this.loadAutomations();
-        await this.loadSettings();
+        // ⚡ Bolt: Run independent data loading in parallel to reduce initial load time
+        // This ensures the UI is responsive faster (devices and automations appear immediately)
+        // instead of waiting for the slow network scan to complete.
+        await Promise.all([
+            this.scanNetworks(),
+            this.refreshDevices(),
+            this.loadAutomations(),
+            this.loadSettings()
+        ]);
     }
 
     setButtonLoading(buttonId, isLoading) {
@@ -254,6 +259,7 @@ class WiFiTriangulationApp {
             this.updateNetworkDisplay();
             this.updateAccessPointsDisplay();
             this.updateDashboard();
+            this.drawFloorPlan();
             
             this.updateStatus('Networks scanned', 'connected');
         } catch (error) {
@@ -481,6 +487,7 @@ class WiFiTriangulationApp {
         try {
             this.automations = await ipcRenderer.invoke('get-automations');
             this.updateAutomationDisplay();
+            this.updateDashboard();
         } catch (error) {
             console.error('Failed to load automations:', error);
         }

@@ -16,7 +16,18 @@ class WiFiTriangulationApp {
         this.panY = 0;
         this.signalBarsCache = {};
         
+        // ⚡ Bolt: Debounce updateDashboard to prevent double-renders
+        this.updateDashboard = this.debounce(this.updateDashboard.bind(this), 100);
+
         this.init();
+    }
+
+    debounce(func, wait) {
+        let timeout;
+        return (...args) => {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(this, args), wait);
+        };
     }
 
     escapeHtml(unsafe) {

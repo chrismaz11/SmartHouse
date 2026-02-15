@@ -213,10 +213,13 @@ class WiFiTriangulationApp {
     }
 
     async loadInitialData() {
-        await this.scanNetworks();
-        await this.refreshDevices();
-        await this.loadAutomations();
-        await this.loadSettings();
+        // ⚡ Bolt: Parallelize initial data loading to reduce startup time
+        await Promise.all([
+            this.scanNetworks(),
+            this.refreshDevices(),
+            this.loadAutomations(),
+            this.loadSettings()
+        ]);
     }
 
     setButtonLoading(buttonId, isLoading) {

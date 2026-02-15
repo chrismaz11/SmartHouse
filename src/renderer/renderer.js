@@ -843,29 +843,49 @@ class WiFiTriangulationApp {
         const container = document.getElementById('manual-networks');
         const entry = document.createElement('div');
         entry.className = 'manual-network-entry';
-        entry.innerHTML = `
-            <label>
-                Network Name (SSID):
-                <input type="text" class="manual-ssid" placeholder="Network name">
-            </label>
-            <label>
-                Location:
-                <select class="manual-location">
-                    <option value="1">Floor 1</option>
-                    <option value="2">Floor 2</option>
-                    <option value="3">Floor 3</option>
-                </select>
-            </label>
-            <label>
-                Device Type:
-                <select class="manual-type">
-                    <option value="router">Main Router</option>
-                    <option value="pod">WiFi Pod/Extender</option>
-                    <option value="repeater">Repeater</option>
-                </select>
-            </label>
-            <button class="btn-secondary" onclick="this.parentElement.remove()" style="margin-top: 8px;">Remove</button>
+
+        // 🛡️ Sentinel: Construct DOM elements programmatically to avoid inline scripts (CSP compliance)
+        const ssidLabel = document.createElement('label');
+        ssidLabel.textContent = 'Network Name (SSID):';
+        const ssidInput = document.createElement('input');
+        ssidInput.type = 'text';
+        ssidInput.className = 'manual-ssid';
+        ssidInput.placeholder = 'Network name';
+        ssidLabel.appendChild(ssidInput);
+
+        const locationLabel = document.createElement('label');
+        locationLabel.textContent = 'Location:';
+        const locationSelect = document.createElement('select');
+        locationSelect.className = 'manual-location';
+        locationSelect.innerHTML = `
+            <option value="1">Floor 1</option>
+            <option value="2">Floor 2</option>
+            <option value="3">Floor 3</option>
         `;
+        locationLabel.appendChild(locationSelect);
+
+        const typeLabel = document.createElement('label');
+        typeLabel.textContent = 'Device Type:';
+        const typeSelect = document.createElement('select');
+        typeSelect.className = 'manual-type';
+        typeSelect.innerHTML = `
+            <option value="router">Main Router</option>
+            <option value="pod">WiFi Pod/Extender</option>
+            <option value="repeater">Repeater</option>
+        `;
+        typeLabel.appendChild(typeSelect);
+
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'btn-secondary';
+        removeBtn.textContent = 'Remove';
+        removeBtn.style.marginTop = '8px';
+        removeBtn.addEventListener('click', () => entry.remove());
+
+        entry.appendChild(ssidLabel);
+        entry.appendChild(locationLabel);
+        entry.appendChild(typeLabel);
+        entry.appendChild(removeBtn);
+
         container.appendChild(entry);
     }
 
